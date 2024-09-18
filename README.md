@@ -1,6 +1,8 @@
 # Tarxiv
+---------
+Astro-Colibri 3rd Workshop - Paris 2024 (16th-20th September)
 
-### Description and History
+### Motivation and History 
 The Tarxiv (Transient Arxiv) database centralises in one service the light curves and contextual information (including TNS alerts) of Transients discovered by ZTF, ATLAS, ASAS-SN (and **TBD**) since [DATE].
 It is designed to allow easy access to data that has historically been decentralised and enable archival searches of transient behaviours on a large scale. 
 
@@ -10,7 +12,6 @@ The scope of the Tarxiv is currently limited to optical data but in spirit shoul
 
 
 ### Usage
-
 You can query the Tarxiv using **[API]** and **[FRONTEND?]**.
 
 This database is also aimed at facilitating micro-services provided by [Astro-Colibri](https://astro-colibri.science/) such as [BLA] and [BLA].
