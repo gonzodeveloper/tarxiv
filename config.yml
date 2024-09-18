@@ -8,13 +8,13 @@ port: 9000
 sql_db: 
   host: localhost
   port: 3306
-  user: username
+  user: tarxiv_user
   pass: pass1234
 
 doc-db:
   host: localhost
   port: 5044
-  user: username
+  user: tarxiv_user
   pass: pass1234
   cert: /etc/certs/key.crt
   
