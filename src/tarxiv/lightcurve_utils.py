@@ -144,7 +144,7 @@ def get_ztf_lc_from_tns_name(tns_name: str):
     """
     # first use the Fink resolver to get corresponding ZTF name
     r = requests.post(
-        "https://fink-portal.org/api/v1/resolver",
+        "{}/api/v1/resolver".format(FINKAPIURL),
         json={"resolver": "tns", "name": tns_name},
     )
 
@@ -172,8 +172,70 @@ def get_ztf_lc_from_tns_name(tns_name: str):
     return pd.DataFrame()
 
 
-def get_ztf_lc_from_coord(ra: float, dec: float):
-    pass
+def get_ztf_lc_from_coord(ra: float, dec: float, radius: float = 5.0):
+    """Get ZTF data from Fink using its coordinates RA/Dec in degrees
+
+    Parameters
+    ----------
+    ra: float
+        Right ascension in degree
+    dec: float
+        Declination in degree
+    radius: float, optional
+        Conesearch radius, in arcsecond. Default is 5.0
+
+    Returns
+    -------
+    pd.DataFrame
+        Pandas DataFrame containing ZTF data from Fink for
+        the matching object in TNS. Each row is a measurement.
+
+    Examples
+    --------
+    >>> pdf = get_ztf_lc_from_coord(37.044652, 28.326629)
+    >>> assert not pdf.empty, "Oooops there should be data for SN 2024utu (ZTF24abeiqfc) in Fink!"
+
+    # artifically getting blending
+    >>> out = get_ztf_lc_from_coord(37.044652, 28.326629, 60)
+
+
+    # Check that crazy input returns empty output
+    >>> out = get_ztf_lc_from_coord("h:m:s", "d:m:s")
+    >>> assert out.empty, "Hum, you need coordinates in degree!"
+    """
+    # get matches in a conesearch
+    r = requests.post(
+        "{}/api/v1/conesearch".format(FINKAPIURL),
+        json={
+            "ra": ra,
+            "dec": dec,
+            "radius": radius,
+            "columns": "i:objectId"
+        }
+    )
+
+    # check status
+    if r.status_code != 200:
+        _LOG.warning(
+            "Unable to get data for ({}, {}, {}) in Fink. HTTP error code: {}".format(
+                ra, dec, radius, r.status_code
+            )
+        )
+        return pd.DataFrame()
+
+    # get data for the match
+    matches = [val["i:objectId"] for val in r.json()]
+
+    if len(matches) == 0:
+        _LOG.warning("0 match in the conesearch ({}, {}, {})".format(ra, dec, radius))
+        return pd.DataFrame()
+
+    if len(matches) > 1:
+        _LOG.warning("{} matches from the conesearch ({}, {}, {}) with object ID: {}. We will take the first ID. Maybe you want to reduce the conesearch radius".format(len(matches), ra, dec, radius, str(matches)))
+
+    # get full lightcurves for all these alerts
+    return get_ztf_lc_from_ztf_name(matches[0])
+
 
 
 if __name__ == "__main__":
