@@ -1,6 +1,6 @@
 
 
-![TarXiv](https://github.com/gonzodeveloper/tarxiv/images/main/logo_main_LIGHT.png?raw=true)
+![TarXiv](./images/logo_main_LIGHT.png?raw=true)
 
 ---------
 Astro-Colibri 3rd Workshop - Paris 2024 (16th-20th September)
