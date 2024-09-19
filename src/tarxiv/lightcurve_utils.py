@@ -206,12 +206,7 @@ def get_ztf_lc_from_coord(ra: float, dec: float, radius: float = 5.0):
     # get matches in a conesearch
     r = requests.post(
         "{}/api/v1/conesearch".format(FINKAPIURL),
-        json={
-            "ra": ra,
-            "dec": dec,
-            "radius": radius,
-            "columns": "i:objectId"
-        }
+        json={"ra": ra, "dec": dec, "radius": radius, "columns": "i:objectId"},
     )
 
     # check status
@@ -231,11 +226,14 @@ def get_ztf_lc_from_coord(ra: float, dec: float, radius: float = 5.0):
         return pd.DataFrame()
 
     if len(matches) > 1:
-        _LOG.warning("{} matches from the conesearch ({}, {}, {}) with object ID: {}. We will take the first ID. Maybe you want to reduce the conesearch radius".format(len(matches), ra, dec, radius, str(matches)))
+        _LOG.warning(
+            "{} matches from the conesearch ({}, {}, {}) with object ID: {}. We will take the first ID. Maybe you want to reduce the conesearch radius".format(
+                len(matches), ra, dec, radius, str(matches)
+            )
+        )
 
     # get full lightcurves for all these alerts
     return get_ztf_lc_from_ztf_name(matches[0])
-
 
 
 if __name__ == "__main__":
