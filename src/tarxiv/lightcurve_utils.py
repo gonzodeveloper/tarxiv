@@ -87,6 +87,11 @@ def get_ztf_lc_from_ztf_name(ztf_name: str):
     --------
     >>> pdf = get_ztf_lc_from_ztf_name("ZTF24abeiqfc")
     >>> assert not pdf.empty, "Oooops there should be data for ZTF24abeiqfc in Fink!"
+
+
+    # Check that crazy input returns empty output
+    >>> out = get_ztf_lc_from_ztf_name("toto")
+    >>> assert out.empty, "Hum, there is no `toto` in Fink!"
     """
     # get the relevant columns to download
     cols = mapping_ztf_to_tarxiv().keys()
@@ -96,10 +101,19 @@ def get_ztf_lc_from_ztf_name(ztf_name: str):
         json={"objectId": ztf_name, "columns": ",".join(cols), "output-format": "json"},
     )
 
-    pdf = pd.read_json(io.BytesIO(r.content))
+    if r.status_code != 200:
+        _LOG.warning(
+            "Unable to get data for {} in Fink. HTTP error code: {}".format(
+                ztf_name, r.status_code
+            )
+        )
+        return pd.DataFrame()
 
-    if pdf.empty:
+    if r.json() == []:
         _LOG.warning("Data for {} not found on Fink".format(ztf_name))
+
+    # TODO: do we really need the pandas conversion?
+    pdf = pd.read_json(io.BytesIO(r.content))
 
     return pdf
 
