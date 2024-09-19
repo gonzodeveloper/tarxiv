@@ -1,0 +1,249 @@
+{
+    "objname": "2018fhw",
+    "name_prefix": "SN",
+    "objid": 29028,
+    "object_type": {
+        "name": "SN Ia",
+        "id": 3
+    },
+    "redshift": 0.017,
+    "ra": "04:18:06.200",
+    "dec": "-63:36:56.41",
+    "radeg": 64.525833,
+    "decdeg": -63.615669,
+    "radeg_err": 0,
+    "decdeg_err": 0,
+    "hostname": "2MASX J04180598-6336523",
+    "host_redshift": null,
+    "internal_names": "ASASSN-18tb, Gaia18cig, ",
+    "discoverer_internal_name": "ASASSN-18tb",
+    "discoverydate": "2018-08-21 07:26:24.000",
+    "discoverer": "J. Brimacombe, P. Vallely, for the ASAS-SN team",
+    "reporter": "Patrick Vallely",
+    "reporterid": 668,
+    "source": "user",
+    "discoverymag": 16.8,
+    "discmagfilter": {
+        "id": 12,
+        "name": "V",
+        "family": "Johnson"
+    },
+    "reporting_group": {
+        "groupid": 3,
+        "group_name": "ASAS-SN"
+    },
+    "discovery_data_source": {
+        "groupid": 3,
+        "group_name": "ASAS-SN"
+    },
+    "public": 1,
+    "end_prop_period": null,
+    "photometry": [
+        {
+            "obsdate": "2018-08-21 07:26:24",
+            "jd": 2458351.81,
+            "flux": 16.8,
+            "fluxerr": "",
+            "limflux": "",
+            "flux_unit": {
+                "id": 3,
+                "name": "VegaMag"
+            },
+            "instrument": {
+                "id": 154,
+                "name": "Cassius"
+            },
+            "telescope": {
+                "id": 100,
+                "name": "ASASSN-2"
+            },
+            "filters": {
+                "id": 12,
+                "name": "V"
+            },
+            "exptime": "",
+            "observer": "",
+            "remarks": ""
+        },
+        {
+            "obsdate": "2018-08-15 09:36:00",
+            "jd": 2458345.9,
+            "flux": "",
+            "fluxerr": "",
+            "limflux": 17.9,
+            "flux_unit": {
+                "id": 3,
+                "name": "VegaMag"
+            },
+            "instrument": {
+                "id": 154,
+                "name": "Cassius"
+            },
+            "telescope": {
+                "id": 100,
+                "name": "ASASSN-2"
+            },
+            "filters": {
+                "id": 12,
+                "name": "V"
+            },
+            "exptime": "",
+            "observer": "",
+            "remarks": "[Last non detection] "
+        },
+        {
+            "obsdate": "2018-08-20 15:23:02",
+            "jd": 2458351.1409954,
+            "flux": 17.11,
+            "fluxerr": 0.2,
+            "limflux": "",
+            "flux_unit": {
+                "id": 1,
+                "name": "ABMag"
+            },
+            "instrument": {
+                "id": 163,
+                "name": "Gaia-photometric"
+            },
+            "telescope": {
+                "id": 107,
+                "name": "Gaia"
+            },
+            "filters": {
+                "id": 75,
+                "name": "G"
+            },
+            "exptime": 60,
+            "observer": "Robot",
+            "remarks": ""
+        },
+        {
+            "obsdate": "2018-07-17 14:00:57",
+            "jd": 2458317.0839931,
+            "flux": "",
+            "fluxerr": "",
+            "limflux": 21.5,
+            "flux_unit": {
+                "id": 1,
+                "name": "ABMag"
+            },
+            "instrument": {
+                "id": 163,
+                "name": "Gaia-photometric"
+            },
+            "telescope": {
+                "id": 107,
+                "name": "Gaia"
+            },
+            "filters": {
+                "id": 75,
+                "name": "G"
+            },
+            "exptime": "",
+            "observer": "Robot",
+            "remarks": "[Last non detection] "
+        },
+        {
+            "obsdate": "2018-09-16 08:00:10",
+            "jd": 2458377.83345,
+            "flux": 17.27,
+            "fluxerr": 0.009,
+            "limflux": 22,
+            "flux_unit": {
+                "id": 3,
+                "name": "VegaMag"
+            },
+            "instrument": {
+                "id": 190,
+                "name": "OGLEIV-Cam"
+            },
+            "telescope": {
+                "id": 113,
+                "name": "OGLE-1.3m"
+            },
+            "filters": {
+                "id": 14,
+                "name": "I"
+            },
+            "exptime": 150,
+            "observer": "OGLE-IV",
+            "remarks": ""
+        },
+        {
+            "obsdate": "2018-08-15 10:07:47",
+            "jd": 2458345.92208,
+            "flux": 19.126,
+            "fluxerr": 0.029,
+            "limflux": 22,
+            "flux_unit": {
+                "id": 3,
+                "name": "VegaMag"
+            },
+            "instrument": {
+                "id": 190,
+                "name": "OGLEIV-Cam"
+            },
+            "telescope": {
+                "id": 113,
+                "name": "OGLE-1.3m"
+            },
+            "filters": {
+                "id": 14,
+                "name": "I"
+            },
+            "exptime": 150,
+            "observer": "OGLE-IV",
+            "remarks": "first robust detection"
+        },
+        {
+            "obsdate": "2018-04-24 23:25:09",
+            "jd": 2458233.4758,
+            "flux": "",
+            "fluxerr": "",
+            "limflux": 22,
+            "flux_unit": {
+                "id": 3,
+                "name": "VegaMag"
+            },
+            "instrument": {
+                "id": 190,
+                "name": "OGLEIV-Cam"
+            },
+            "telescope": {
+                "id": 113,
+                "name": "OGLE-1.3m"
+            },
+            "filters": {
+                "id": 14,
+                "name": "I"
+            },
+            "exptime": 150,
+            "observer": "OGLE-IV",
+            "remarks": "[Last non detection] "
+        }
+    ],
+    "spectra": [
+        {
+            "obsdate": "2018-08-23 02:39:48",
+            "jd": 2458353.610975117,
+            "public": 1,
+            "end_prop_period": null,
+            "exptime": 1933,
+            "groupid": 0,
+            "observer": "M. Kotze",
+            "reducer": "Y. Eweis, S. W. Jha",
+            "asciifile": "https://www.wis-tns.org/system/files/uploaded/general/tns_2018fhw_2458353.610975117_SALT_RSS.dat",
+            "fitsfile": "https://www.wis-tns.org/system/files/uploaded/general/tns_2018fhw_2458353.610975117_SALT_RSS.fits",
+            "remarks": "Type Ia SN at maximum light.",
+            "source_group_name": "None",
+            "instrument": {
+                "id": 117,
+                "name": "RSS"
+            },
+            "telescope": {
+                "id": 82,
+                "name": "SALT"
+            }
+        }
+    ]
+}
