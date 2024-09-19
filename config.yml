@@ -5,25 +5,16 @@ host: localhost
 port: 9000
 
 # database information
-sql_db: 
+database:
   host: localhost
-  port: 3306
   user: tarxiv_user
   pass: pass1234
-
-doc-db:
-  host: localhost
-  port: 5044
-  user: tarxiv_user
-  pass: pass1234
-  cert: /etc/certs/key.crt
   
-# publishing information
-
 # tns certifications
 tns:
-  site: "www.wis-tns.org"
-  bot_id: "191311"
-  bot_name: "tarxiv"
+  id: 191311
+  type: "bot"
+  name: "tarxiv"
+  site: "https://www.wis-tns.org"
   api_key: "API-KEY-HERE"
-
+  
