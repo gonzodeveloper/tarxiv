@@ -10,6 +10,8 @@ import json
 import sys
 import io
 
+from pprint import pprint
+
 # Read in config
 config = read_config(sys.argv[1])
 
@@ -33,6 +35,7 @@ r = requests.post(
       headers=headers
 )
 
+pprint(locals())
 # Write to bytesio and convert to pandas
 with zipfile.ZipFile(io.BytesIO(r.content)) as myzip:
     data = myzip.read(name='tns_public_objects.csv')
@@ -53,7 +56,7 @@ coll = cb.collection('tns')
 
 # Query all TNS objects in database
 for idx, tns_row in tns_df.iterrows():
-    print(f"Retreiving {idx:06d} of {len(tns_df):06d")
+    print(f"Retreiving {idx:06d} of {len(tns_df):06d}")
     # Run request to TNS server
     get_url = TNS_URL +  "/api/get/object"
     headers = {'User-Agent': tns_marker}
