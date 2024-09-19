@@ -26,4 +26,4 @@ jobs:
         pip install pytest
     - name: Lint utilities
       run: |
-        pytest --doctest-modules src
+        pytest --doctest-modules tarxiv
