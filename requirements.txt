@@ -1,2 +1,4 @@
 fink-tns
+pandas
 hop-client
+pyyaml

@@ -1,12 +1,12 @@
-import hop
 from hop import Stream
 from hop.auth import load_auth
 # Send and receive GCN notices
 
+
 # Send the message through HOPSKOTCH
 def submit_message_to_hop(message: dict):
-    """
-    Send a message through the HOPSKOTCH kafka broker
+    """Send a message through the HOPSKOTCH kafka broker
+
     message: dict
         The message to send. Message must be json serializable
     """
