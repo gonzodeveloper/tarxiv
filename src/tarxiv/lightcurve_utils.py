@@ -1,4 +1,5 @@
 """Pull and process lightcurves"""
+
 import io
 import requests
 import logging
@@ -6,6 +7,7 @@ import logging
 import pandas as pd
 
 _LOG = logging.getLogger(__name__)
+FINKAPIURL = "https://fink-portal.org"
 
 
 def mapping_ztf_to_tarxiv():
@@ -61,6 +63,9 @@ def get_ztf_lc(ztf_name=None, tns_name=None, coord=None):
 
     # TODO: perform the column name conversion before returning
     # TODO: `mapping_ztf_to_tarxiv`
+
+    # TODO: do we want to return a DataFrame or JSON is fine?
+    # TODO: JSON will be faster (no conversion), but messier.
     return pdf
 
 
@@ -78,20 +83,25 @@ def get_ztf_lc_from_ztf_name(ztf_name: str):
         Pandas DataFrame containing ZTF data from Fink for
         the matching object in TNS. Each row is a measurement.
 
+    Examples
+    --------
+    >>> pdf = get_ztf_lc_from_ztf_name("ZTF24abeiqfc")
+    >>> assert not pdf.empty, "Oooops there should be data for ZTF24abeiqfc in Fink!"
     """
     # get the relevant columns to download
     cols = mapping_ztf_to_tarxiv().keys()
 
     r = requests.post(
         "{}/api/v1/objects".format(FINKAPIURL),
-        json={
-            "objectId": ztf_name,
-            "columns": ",".join(cols),
-            "output-format": "json"
-        }
+        json={"objectId": ztf_name, "columns": ",".join(cols), "output-format": "json"},
     )
 
-    return pd.read_json(io.BytesIO(r.content))
+    pdf = pd.read_json(io.BytesIO(r.content))
+
+    if pdf.empty:
+        _LOG.warning("Data for {} not found on Fink".format(ztf_name))
+
+    return pdf
 
 
 def get_ztf_lc_from_tns_name(tns_name: str):
@@ -100,3 +110,11 @@ def get_ztf_lc_from_tns_name(tns_name: str):
 
 def get_ztf_lc_from_coord(ra: float, dec: float):
     pass
+
+
+if __name__ == "__main__":
+    """Execute the test suite"""
+    import sys
+    import doctest
+
+    sys.exit(doctest.testmod()[0])
