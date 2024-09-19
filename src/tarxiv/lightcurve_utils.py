@@ -1,6 +1,9 @@
 """Pull and process lightcurves"""
-
+import io
+import requests
 import logging
+
+import pandas as pd
 
 _LOG = logging.getLogger(__name__)
 
@@ -62,7 +65,33 @@ def get_ztf_lc(ztf_name=None, tns_name=None, coord=None):
 
 
 def get_ztf_lc_from_ztf_name(ztf_name: str):
-    pass
+    """Get ZTF data from Fink using a ZTF objectId
+
+    Parameters
+    ----------
+    ztf_name: str
+        Name of a ZTF object, starting with `ZTF`
+
+    Returns
+    -------
+    pd.DataFrame
+        Pandas DataFrame containing ZTF data from Fink for
+        the matching object in TNS. Each row is a measurement.
+
+    """
+    # get the relevant columns to download
+    cols = mapping_ztf_to_tarxiv().keys()
+
+    r = requests.post(
+        "{}/api/v1/objects".format(FINKAPIURL),
+        json={
+            "objectId": ztf_name,
+            "columns": ",".join(cols),
+            "output-format": "json"
+        }
+    )
+
+    return pd.read_json(io.BytesIO(r.content))
 
 
 def get_ztf_lc_from_tns_name(tns_name: str):
