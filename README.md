@@ -13,6 +13,7 @@ It is designed to allow easy access to data that has historically been decentral
 It follows in the footsteps of Open Science projects like the [arXiv](https://arxiv.org/), the Open Supernova Catalogue ([Github](https://github.com/astrocatalogs/supernovae) - [Guillochon et al. 2017](https://ui.adsabs.harvard.edu/abs/2017ApJ...835...64G/abstract)), the [AstroCats](https://github.com/astrocatalogs/astrocats) initiative and [Otter](https://github.com/astro-otter/otter-docker?tab=readme-ov-file#otter-docker). 
 
 Our philosophy is that most astronomers do not have time or resources to compile their currated catalogues of events, and that explosive transients such as TDEs and Supernovae and event galactic events like Cataclysmic Variables should not have segregated search environments. 
+A centralised archive of transient lightcurves not only enables discovery and rediscovery of data but also facilitates citing the data creators. 
 
 The scope of the Tarxiv is currently limited to optical data but in spirit should extend to high energy transients and gravitational wave transients to enable multi-messenger archival searches. 
 
@@ -21,4 +22,11 @@ The scope of the Tarxiv is currently limited to optical data but in spirit shoul
 You can query the Tarxiv using **[API]** and **[FRONTEND?]**.
 
 This database is also aimed at facilitating micro-services provided by [Astro-Colibri](https://astro-colibri.science/) such as [BLA] and [BLA].
+
+### Examples
+[TBD]
+
+### Citing the data sources easily with BibTex
+[TBD]
+
 
