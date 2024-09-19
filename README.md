@@ -1,6 +1,6 @@
 
 
-![TarXiv](./images/logo_main_LIGHT.png?raw=true)
+![TarXiv](./.github/images/logo_main_LIGHT.png?raw=true)
 
 # The Transient Arxiv project
 ---------
