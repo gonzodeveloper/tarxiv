@@ -20,3 +20,10 @@ doc-db:
   
 # publishing information
 
+# tns certifications
+tns:
+  site: "www.wis-tns.org"
+  bot_id: "191311"
+  bot_name: "tarxiv"
+  api_key: "API-KEY-HERE"
+
