@@ -1,3 +1,9 @@
+/* 
+  Run this script as MySQL/MariaDB root account.
+  Make sure to change user_pass and admin_pass beforehand!
+*/
+
+
 /* Create database and tables */
 CREATE DATABASE IF NOT EXISTS ;
 
