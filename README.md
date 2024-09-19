@@ -2,6 +2,7 @@
 
 ![TarXiv](./images/logo_main_LIGHT.png?raw=true)
 
+# The Transient Arxiv project
 ---------
 Astro-Colibri 3rd Workshop - Paris 2024 (16th-20th September)
 
