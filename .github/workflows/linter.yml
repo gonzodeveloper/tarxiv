@@ -26,5 +26,10 @@ jobs:
         pip install ruff
     - name: tarxiv
       run: |
-        ruff check --statistics --preview src/tarxiv/*.py
-        ruff format --check --preview src/tarxiv/*.py
+        ruff check --statistics --preview tarxiv/*.py
+        ruff format --check --preview tarxiv/*.py
+
+    - name: deploy
+      run: |
+        ruff check --statistics --preview deploy/*.py
+        ruff format --check --preview deploy/*.py
