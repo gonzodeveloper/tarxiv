@@ -1,7 +1,4 @@
 """Pull and process lightcurves"""
-import io
-import requests
-import pandas as pd
 
 
 def mapping_ztf_to_tarxiv():
@@ -13,14 +10,13 @@ def mapping_ztf_to_tarxiv():
         Dictionary containing mapping between
         Fink column names and tarxiv column names
     """
-
     # TODO: define tarxiv column names
     dic = {
         "i:magpsf": "MAG",
         "i:sigmapsf": "MAGERR",
         "i:fid": "FILTER",
         "i:jd": "TIME",
-        "whatelse?": "TBD"
+        "whatelse?": "TBD",
     }
 
     return dic
@@ -41,7 +37,7 @@ def get_ztf_lc(ztf_name=None, tns_name=None, coord=None):
     Returns
     -------
     pd.DataFrame
-        Pandas DataFrame containing ZTF data from Fink for 
+        Pandas DataFrame containing ZTF data from Fink for
         the matching object in TNS. Each row is a measurement.
 
     """
@@ -52,14 +48,10 @@ def get_ztf_lc(ztf_name=None, tns_name=None, coord=None):
     elif coord is not None and isinstance(coord, tuple):
         pdf = get_ztf_lc_from_coord(coord[0], coord[1])
     else:
-        log.error("You should choose an object name or provide coordinates to get ZTF lightcurves")
+        log.error(
+            "You should choose an object name or provide coordinates to get ZTF lightcurves"
+        )
 
     # TODO: perform the column name conversion before returning
     # TODO: `mapping_ztf_to_tarxiv`
     return pdf
-
-
-
-
-
-
