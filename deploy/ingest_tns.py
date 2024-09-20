@@ -4,7 +4,6 @@ from collections import OrderedDict
 from couchbase.cluster import Cluster
 from couchbase.options import ClusterOptions
 from couchbase.auth import PasswordAuthenticator
-from collections import OrderedDict
 import pandas as pd
 import requests
 import zipfile
@@ -13,7 +12,6 @@ import json
 import sys
 import io
 
-from pprint import pprint
 
 # Read in config
 config = read_config(sys.argv[1])
@@ -49,24 +47,15 @@ with zipfile.ZipFile(io.BytesIO(r.content)) as myzip:
 tns_df = pd.read_csv(io.BytesIO(data), skiprows=[0])
 
 # Sample for testing
-<<<<<<< HEAD
 tns_df = tns_df.sample(1000).reset_index()
-
-# Connect to couchbase
-connection_str = 'couchbase://' + config["database"]["host"]
-options = ClusterOptions(PasswordAuthenticator(
-    config["database"]["user"], config["database"]["pass"]))
-cluster = Cluster(connection_str, options)
-=======
-tns_df = tns_df.sample(1000)
 
 # Connect to couchbase
 connection_str = "couchbase://" + config["database"]["host"]
 options = ClusterOptions(
     PasswordAuthenticator(config["database"]["user"], config["database"]["pass"])
 )
-cluster = Cluster(options)
->>>>>>> refs/remotes/origin/main
+cluster = Cluster(connection_str, options)
+
 # Get tarxiv access
 cb = cluster.bucket("tarxiv")
 coll = cb.collection("tns")
@@ -75,28 +64,16 @@ coll = cb.collection("tns")
 for idx, tns_row in tns_df.iterrows():
     print(f"Retreiving {idx:06d} of {len(tns_df):06d}", end="\r")
     # Run request to TNS server
-<<<<<<< HEAD
-    get_url = config["tns"]["site"] +  "/api/get/object"
-    headers = {'User-Agent': tns_marker_str}
+    get_url = config["tns"]["site"] + "/api/get/object"
+    headers = {"User-Agent": tns_marker_str}
     obj_request = OrderedDict([
-            ("objname", tns_row['name']),
-            ("objid", ""),
-            ("photometry", "0"),
-            ("spectra", "1")])
-    get_data = {'api_key': config["tns"]["api_key"], 'data': json.dumps(obj_request)}
-    response = requests.post(get_url, headers = headers, data = get_data)
-=======
-    get_url = TNS_URL + "/api/get/object"
-    headers = {"User-Agent": tns_marker}
-    obj_request = OrderedDict(
         ("objname", tns_row["name"]),
         ("objid", ""),
         ("photometry", "0"),
         ("spectra", "1"),
-    )
+    ])
     get_data = {"api_key": config["tns"]["api_key"], "data": json.dumps(obj_request)}
     response = requests.post(get_url, headers=headers, data=get_data)
->>>>>>> refs/remotes/origin/main
     payload = json.loads(response.text)["data"]["reply"]
     # Upsert to database
     doc_id = str(payload["objid"])
