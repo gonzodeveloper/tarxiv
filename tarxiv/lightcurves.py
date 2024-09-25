@@ -298,8 +298,8 @@ def get_atlas_lc(atlas_name=None, tns_name=None, coord=None):
     elif tns_name is not None:
         pdf = get_atlas_lc_from_tns_name(tns_name)
     elif coord is not None and isinstance(coord, tuple):
-        #pdf = get_ztf_lc_from_coord(coord[0], coord[1])
-        raise Exception("Not implemented yet")
+        pdf = get_atlas_lc_from_coord(coord[0], coord[1])
+
     else:
         _LOG.error(
             "You should choose an object name or provide coordinates to get ATLAS lightcurves"
@@ -406,6 +406,63 @@ def get_atlas_lc_from_tns_name(tns_name: str):
     # 2) Get the ATLAS data from the ATLAS ID
     return  get_atlas_lc_from_atlas_id(atlas_id)
 
+
+
+def get_atlas_lc_from_coord(ra: float, dec: float, radius: float = 5.0):
+    """Get ATLAS data from Cone Search. RA/Dec in degrees
+
+    Note
+    -----
+    without a date threshold this is very very very slow.
+
+    Parameters
+    ----------
+    ra: float
+        Right ascension in degree
+    dec: float
+        Declination in degree
+    radius: float, optional
+        Conesearch radius, in arcsecond. Default is 5.0
+
+    Returns
+    -------
+    pd.DataFrame
+        Pandas DataFrame. Each row is a measurement.
+
+    Examples
+    --------
+    >>> pdf = get_atlas_lc_from_coord(37.044652, 28.326629)
+    >>> assert not pdf.empty, "Oooops there should be data for SN 2024utu (ZTF24abeiqfc) in Fink!"
+
+    # artifically getting blending
+    >>> out = get_atlas_lc_from_coord(37.044652, 28.326629, 60)
+
+
+    # Check that crazy input returns empty output
+    >>> out = get_atlas_lc_from_coord("h:m:s", "d:m:s")
+    >>> assert out.empty, "Hum, you need coordinates in degree!"
+    """
+    # get matches in a conesearch
+
+    r = requests.post(url = f"{ATLASAPIURL}cone/",
+                      json = {"ra": ra, "dec": dec, "radius": radius, "requestType": 'nearest'},
+                      headers = atlas_headers
+                      )
+
+    # check status
+    if r.status_code != 200:
+        _LOG.warning(
+            "Unable to get data for ({}, {}, {}) in ATLAS. HTTP error code: {}".format(
+                ra, dec, radius, r.status_code
+            )
+        )
+        return pd.DataFrame()
+
+    atlas_id = r.json()['object']
+
+
+    # get full lightcurves for all these alerts
+    return get_atlas_lc_from_atlas_id(atlas_id)
 
 #########################
 
