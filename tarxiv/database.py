@@ -12,7 +12,7 @@ class TarxivDB:
     def __init__(self, config_dir):
         # General parameters
         config = read_config(config_dir + "config.yml")
-        self.logger = get_logger("tarxiv_db", config["log_level"])
+        self.logger = get_logger("tarxiv_db", config["log_level"], "tarxiv_db")
 
         # Connect to Couchbase
         self.logger.info("connecting to couchbase")
