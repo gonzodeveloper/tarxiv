@@ -3,3 +3,4 @@ hop-client
 pandas
 pyyaml
 couchbase
+google-cloud

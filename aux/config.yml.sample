@@ -1,0 +1,27 @@
+# configuration File for the tarxiv system.
+
+# General
+log_level: "debug"
+
+# database information
+database:
+  host: "localhost"
+  user: "tarxiv_user"
+  pass: "pass1234"
+  
+# tns certifications
+tns:
+  id: 191311
+  type: "bot"
+  name: "tarxiv"
+  site: "https://www.wis-tns.org"
+  api_key: "API-KEY-HERE"
+  email: "tns@weizmann.ac.il"
+
+# email certifications (for ingesting TNS notices)
+gmail:
+  secrets_file: "my_cred_file.json"
+  token_name: "gmail_token.json"
+  scopes:
+    - 'https://www.googleapis.com/auth/gmail.readonly'
+    - 'https://www.googleapis.com/auth/gmail.modify'
