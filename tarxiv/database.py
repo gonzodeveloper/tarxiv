@@ -7,6 +7,8 @@ from couchbase.auth import PasswordAuthenticator
 
 
 class TarxivDB:
+    """Base class for tarxiv data"""
+
     def __init__(self, config_dir):
         # General parameters
         config = read_config(config_dir + "config.yml")

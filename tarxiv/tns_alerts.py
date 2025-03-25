@@ -19,6 +19,8 @@ import os
 
 
 class TarxivTNS:
+    """Base class for TNS data"""
+
     def __init__(self, config_dir, log_name=None):
         # General parameters
         self.config = read_config(config_dir + "config.yml")

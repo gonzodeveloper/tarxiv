@@ -4,7 +4,6 @@ import io
 import requests
 import os
 import logging
-import yaml
 import pandas as pd
 
 #########################
@@ -17,7 +16,7 @@ ATLASAPIURL = "https://star.pst.qub.ac.uk/sne/atlas4/api/"
 
 # ATLAS token provided by admin
 atlas_token = os.environ["ATLASAPI_CONFIG"]
-atlas_headers = {"Authorization": f"Token {config['atlas_token']}"}
+atlas_headers = {"Authorization": f"Token {atlas_token}"}
 
 
 #########################
