@@ -2,26 +2,15 @@
 
 import io
 import requests
-import os
 import logging
 import pandas as pd
 
-#########################
-# CONSTANTS CONSTANTS CONSTANTS
-#########################
+from tarxiv.constants import FINKAPIURL, ATLASAPIURL
+from tarxiv.constants import atlas_headers
+
 _LOG = logging.getLogger(__name__)
-FINKAPIURL = "https://fink-portal.org"
-ATLASAPIURL = "https://star.pst.qub.ac.uk/sne/atlas4/api/"
 
 
-# ATLAS token provided by admin
-atlas_token = os.environ["ATLASAPI_CONFIG"]
-atlas_headers = {"Authorization": f"Token {atlas_token}"}
-
-
-#########################
-# ZTF ZTF ZTF ZTF ZTF ZTF
-#########################
 def mapping_ztf_to_tarxiv():
     """Mapping between ZTF column names and tarxiv column names
 
@@ -248,11 +237,6 @@ def get_ztf_lc_from_coord(ra: float, dec: float, radius: float = 5.0):
     return get_ztf_lc_from_ztf_name(matches[0])
 
 
-#########################
-# ATLAS ATLAS ATLAS ATLAS ATLAS
-#########################
-
-
 def mapping_atlas_to_tarxiv():
     """Mapping between ATLAS column names and tarxiv column names
 
@@ -472,8 +456,6 @@ def get_atlas_lc_from_coord(ra: float, dec: float, radius: float = 5.0):
     # get full lightcurves for all these alerts
     return get_atlas_lc_from_atlas_id(atlas_id)
 
-
-#########################
 
 if __name__ == "__main__":
     """Execute the test suite"""
