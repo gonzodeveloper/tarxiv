@@ -2,7 +2,6 @@
 import logging
 import yaml
 import sys
-import os
 
 
 def read_config(config_file):
@@ -27,7 +26,9 @@ def get_logger(module_name, level, log_file):
     else:
         raise ValueError("invalid logging level, not in  ['info', 'debug']")
 
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(formatter)
     logger.addHandler(handler)
