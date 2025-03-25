@@ -29,7 +29,7 @@ jobs:
         ruff check --statistics --preview tarxiv/*.py
         ruff format --check --preview tarxiv/*.py
 
-    - name: deploy
+    - name: bin 
       run: |
-        ruff check --statistics --preview deploy/*.py
-        ruff format --check --preview deploy/*.py
+        ruff check --statistics --preview bin/*.py
+        ruff format --check --preview bin/*.py

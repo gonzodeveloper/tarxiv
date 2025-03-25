@@ -2,29 +2,15 @@
 
 import io
 import requests
-import os
 import logging
-import yaml
 import pandas as pd
 
-#########################
-# CONSTANTS CONSTANTS CONSTANTS
-#########################
+from tarxiv.constants import FINKAPIURL, ATLASAPIURL
+from tarxiv.constants import atlas_headers
+
 _LOG = logging.getLogger(__name__)
-FINKAPIURL = "https://fink-portal.org"
-ATLASAPIURL = "https://star.pst.qub.ac.uk/sne/atlas4/api/"
-ATLASAPI_CONFIG = os.environ["ATLASAPI_CONFIG"]
-# TODO: NEED TO ADD THIS SOMEWHERE SOMEHOW
 
-assert os.path.exists(ATLASAPI_CONFIG), f"{ATLASAPI_CONFIG} file does not exist"  # Check file exits
-with open(ATLASAPI_CONFIG, 'r') as my_yaml_file:  # Open the file
-    config = yaml.safe_load(my_yaml_file)
 
-atlas_headers = {'Authorization': f"Token {config['token']}"}
-
-#########################
-# ZTF ZTF ZTF ZTF ZTF ZTF
-#########################
 def mapping_ztf_to_tarxiv():
     """Mapping between ZTF column names and tarxiv column names
 
@@ -250,9 +236,6 @@ def get_ztf_lc_from_coord(ra: float, dec: float, radius: float = 5.0):
     # get full lightcurves for all these alerts
     return get_ztf_lc_from_ztf_name(matches[0])
 
-#########################
-# ATLAS ATLAS ATLAS ATLAS ATLAS
-#########################
 
 def mapping_atlas_to_tarxiv():
     """Mapping between ATLAS column names and tarxiv column names
@@ -274,6 +257,7 @@ def mapping_atlas_to_tarxiv():
 
     return dic
 
+
 def get_atlas_lc(atlas_name=None, tns_name=None, coord=None):
     """Get data from ZTF based on either name or coordinates
 
@@ -293,7 +277,7 @@ def get_atlas_lc(atlas_name=None, tns_name=None, coord=None):
 
     """
     if atlas_name is not None:
-        #pdf = get_ztf_lc_from_ztf_name(ztf_name)
+        # pdf = get_ztf_lc_from_ztf_name(ztf_name)
         raise Exception("Not implemented yet")
     elif tns_name is not None:
         pdf = get_atlas_lc_from_tns_name(tns_name)
@@ -313,9 +297,10 @@ def get_atlas_lc(atlas_name=None, tns_name=None, coord=None):
     return pdf
 
 
-def get_atlas_lc_from_atlas_id(atlas_id: str,
-                               mjd_threshold=60_000 # should really set this dynamically
-                               ):
+def get_atlas_lc_from_atlas_id(
+    atlas_id: str,
+    mjd_threshold=60_000,  # should really set this dynamically
+):
     """Get ATLAS data from ATLAS internal ID
 
     Parameters
@@ -333,10 +318,10 @@ def get_atlas_lc_from_atlas_id(atlas_id: str,
     >>> pdf = get_atlas_lc_from_atlas_id("1022810791281932600")
     >>> assert not pdf.empty, "Oooops there should be data for 1022810791281932600 (SN 2024utu) in ATLAS"
     """
-
-    r = requests.post( f"{ATLASAPIURL}objects/",
-                       json={"objects": atlas_id, "mjd": mjd_threshold},
-                       headers=atlas_headers
+    r = requests.post(
+        f"{ATLASAPIURL}objects/",
+        json={"objects": atlas_id, "mjd": mjd_threshold},
+        headers=atlas_headers,
     )
 
     # TODO: need to format the ATLAS data to TarXiv format
@@ -353,12 +338,22 @@ def get_atlas_lc_from_atlas_id(atlas_id: str,
         _LOG.warning("Data for the ATLAS ID {} not found".format(atlas_id))
 
     # TODO: only give the lc dets and lc nondets
-    #pdf = pd.read_json(io.BytesIO(r.content))
-    pdf_dets = pd.DataFrame(r.json()[0]['lc'])
-    cols = ['mag', 'magerr', 'mjd', 'exptime', 'filter', 'expname',
-       'ra', 'dec',  'mag5sig', 'date_inserted']
-    pdf_nondets = pd.DataFrame(r.json()[0]['lcnondets'])
-    pdf = pd.concat([pdf_dets, pdf_nondets]).sort_values('mjd')[cols]
+    # pdf = pd.read_json(io.BytesIO(r.content))
+    pdf_dets = pd.DataFrame(r.json()[0]["lc"])
+    cols = [
+        "mag",
+        "magerr",
+        "mjd",
+        "exptime",
+        "filter",
+        "expname",
+        "ra",
+        "dec",
+        "mag5sig",
+        "date_inserted",
+    ]
+    pdf_nondets = pd.DataFrame(r.json()[0]["lcnondets"])
+    pdf = pd.concat([pdf_dets, pdf_nondets]).sort_values("mjd")[cols]
 
     return pdf
 
@@ -383,9 +378,10 @@ def get_atlas_lc_from_tns_name(tns_name: str):
     """
     # TODO: strip names of initial AT or SN before putting into the payload
     # 1) Get the TNS name from ATLAS
-    r = requests.post( f"{ATLASAPIURL}externalxmlist/",
-                       json= {'externalObjects': tns_name},
-                       headers=atlas_headers
+    r = requests.post(
+        f"{ATLASAPIURL}externalxmlist/",
+        json={"externalObjects": tns_name},
+        headers=atlas_headers,
     )
     if r.status_code != 200:
         _LOG.warning(
@@ -398,11 +394,10 @@ def get_atlas_lc_from_tns_name(tns_name: str):
     if r.json() == []:
         _LOG.warning("Data for the TNS name {} not found".format(tns_name))
 
-    atlas_id = r.json()[0][0]['transient_object_id']
+    atlas_id = r.json()[0][0]["transient_object_id"]
 
     # 2) Get the ATLAS data from the ATLAS ID
-    return  get_atlas_lc_from_atlas_id(atlas_id)
-
+    return get_atlas_lc_from_atlas_id(atlas_id)
 
 
 def get_atlas_lc_from_coord(ra: float, dec: float, radius: float = 5.0):
@@ -441,10 +436,11 @@ def get_atlas_lc_from_coord(ra: float, dec: float, radius: float = 5.0):
     """
     # get matches in a conesearch
 
-    r = requests.post(url = f"{ATLASAPIURL}cone/",
-                      json = {"ra": ra, "dec": dec, "radius": radius, "requestType": 'nearest'},
-                      headers = atlas_headers
-                      )
+    r = requests.post(
+        url=f"{ATLASAPIURL}cone/",
+        json={"ra": ra, "dec": dec, "radius": radius, "requestType": "nearest"},
+        headers=atlas_headers,
+    )
 
     # check status
     if r.status_code != 200:
@@ -455,13 +451,11 @@ def get_atlas_lc_from_coord(ra: float, dec: float, radius: float = 5.0):
         )
         return pd.DataFrame()
 
-    atlas_id = r.json()['object']
-
+    atlas_id = r.json()["object"]
 
     # get full lightcurves for all these alerts
     return get_atlas_lc_from_atlas_id(atlas_id)
 
-#########################
 
 if __name__ == "__main__":
     """Execute the test suite"""
