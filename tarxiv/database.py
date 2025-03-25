@@ -1,5 +1,4 @@
 # Database utilities
-import datetime
 
 from .utils import read_config, get_logger
 from couchbase.cluster import Cluster
@@ -8,6 +7,7 @@ from couchbase.auth import PasswordAuthenticator
 
 
 class TarxivDB:
+    """Base class for tarxiv data"""
 
     def __init__(self, config_dir):
         # General parameters
@@ -16,10 +16,14 @@ class TarxivDB:
 
         # Connect to Couchbase
         self.logger.info("connecting to couchbase")
-        connection_str = 'couchbase://' + config["database"]["host"]
-        options = ClusterOptions(PasswordAuthenticator(config["database"]["user"], config["database"]["pass"]))
+        connection_str = "couchbase://" + config["database"]["host"]
+        options = ClusterOptions(
+            PasswordAuthenticator(
+                config["database"]["user"], config["database"]["pass"]
+            )
+        )
         self.cluster = Cluster(connection_str, options)
-        self.conn = self.cluster.bucket('tarxiv')
+        self.conn = self.cluster.bucket("tarxiv")
         self.logger.info("connected")
 
     def upsert(self, doc_id, doc_payload, collection):
@@ -30,4 +34,3 @@ class TarxivDB:
 
     def close(self):
         self.cluster.close()
-
