@@ -1,0 +1,8 @@
+Deployment instructions for Tarxiv Services
+
+1. Install Couchbase Community Database on server.
+ - create bucket named "tarxiv" with "tns" collection under _default scope
+2. Install Java (tested with version 21).
+3. Install Anaconda environment.
+ -
+4. Install Elasticsearch/Logstash/Kibana
