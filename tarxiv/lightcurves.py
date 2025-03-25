@@ -13,8 +13,8 @@ import pandas as pd
 _LOG = logging.getLogger(__name__)
 FINKAPIURL = "https://fink-portal.org"
 ATLASAPIURL = "https://star.pst.qub.ac.uk/sne/atlas4/api/"
-ATLASAPI_CONFIG = "/home/stevance/software/st3ph3n/st3ph3n/data/api_config_MINE.yaml"
- # TODO: NEED TO ADD THIS SOMEWHERE SOMEHOW
+ATLASAPI_CONFIG = os.environ["ATLASAPI_CONFIG"]
+# TODO: NEED TO ADD THIS SOMEWHERE SOMEHOW
 
 assert os.path.exists(ATLASAPI_CONFIG), f"{ATLASAPI_CONFIG} file does not exist"  # Check file exits
 with open(ATLASAPI_CONFIG, 'r') as my_yaml_file:  # Open the file
@@ -333,9 +333,6 @@ def get_atlas_lc_from_atlas_id(atlas_id: str,
     >>> pdf = get_atlas_lc_from_atlas_id("1022810791281932600")
     >>> assert not pdf.empty, "Oooops there should be data for 1022810791281932600 (SN 2024utu) in ATLAS"
     """
-    # get the relevant columns to download
-    cols = mapping_atlas_to_tarxiv().keys()
-
 
     r = requests.post( f"{ATLASAPIURL}objects/",
                        json={"objects": atlas_id, "mjd": mjd_threshold},
