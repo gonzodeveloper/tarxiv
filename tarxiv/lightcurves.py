@@ -237,27 +237,6 @@ def get_ztf_lc_from_coord(ra: float, dec: float, radius: float = 5.0):
     return get_ztf_lc_from_ztf_name(matches[0])
 
 
-def mapping_atlas_to_tarxiv():
-    """Mapping between ATLAS column names and tarxiv column names
-
-    Returns
-    -------
-    dict
-        Dictionary containing mapping between
-        Fink column names and tarxiv column names
-    """
-    # TODO: define tarxiv column names
-    dic = {
-        "i:magpsf": "MAG",
-        "i:sigmapsf": "MAGERR",
-        "i:fid": "FILTER",
-        "i:jd": "TIME",
-        "whatelse?": "TBD",
-    }
-
-    return dic
-
-
 def get_atlas_lc(atlas_name=None, tns_name=None, coord=None):
     """Get data from ZTF based on either name or coordinates
 
@@ -344,18 +323,18 @@ def get_atlas_lc_from_atlas_id(
         "mag",
         "magerr",
         "mjd",
-        "exptime",
+        #"exptime",
         "filter",
-        "expname",
+        #"expname",
         "ra",
         "dec",
-        "mag5sig",
-        "date_inserted",
+        #"mag5sig",
+        #"date_inserted",
     ]
-    pdf_nondets = pd.DataFrame(r.json()[0]["lcnondets"])
-    pdf = pd.concat([pdf_dets, pdf_nondets]).sort_values("mjd")[cols]
+    #pdf_nondets = pd.DataFrame(r.json()[0]["lcnondets"])
+    #pdf = pd.concat([pdf_dets, pdf_nondets]).sort_values("mjd")[cols]
 
-    return pdf
+    return pdf_dets[cols]
 
 
 def get_atlas_lc_from_tns_name(tns_name: str):
