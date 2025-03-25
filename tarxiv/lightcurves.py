@@ -23,6 +23,16 @@ with open(ATLASAPI_CONFIG, 'r') as my_yaml_file:  # Open the file
 atlas_headers = {'Authorization': f"Token {config['token']}"}
 
 #########################
+atlas2tarxiv_dic = {
+                            "object:ra": "ra",
+                            "object:dec": "dec",
+                            "lc:mag": "photometry:magnitude",
+                            "lc:magerr": "photometry:e_magnitude",
+                            "lc:mjd": "photometry:time",
+                            "lc:filter": "photometry:band",
+                        }
+
+#########################
 # ZTF ZTF ZTF ZTF ZTF ZTF
 #########################
 def mapping_ztf_to_tarxiv():
@@ -263,14 +273,8 @@ def mapping_atlas_to_tarxiv():
         Dictionary containing mapping between
         Fink column names and tarxiv column names
     """
-    # TODO: define tarxiv column names
-    dic = {
-        "i:magpsf": "MAG",
-        "i:sigmapsf": "MAGERR",
-        "i:fid": "FILTER",
-        "i:jd": "TIME",
-        "whatelse?": "TBD",
-    }
+    # TODO: REVIEW WITH JULIEN - is lim_magnitude the right name?
+
 
     return dic
 
@@ -354,13 +358,13 @@ def get_atlas_lc_from_atlas_id(atlas_id: str,
 
     # TODO: only give the lc dets and lc nondets
     #pdf = pd.read_json(io.BytesIO(r.content))
-    pdf_dets = pd.DataFrame(r.json()[0]['lc'])
-    cols = ['mag', 'magerr', 'mjd', 'exptime', 'filter', 'expname',
-       'ra', 'dec',  'mag5sig', 'date_inserted']
-    pdf_nondets = pd.DataFrame(r.json()[0]['lcnondets'])
-    pdf = pd.concat([pdf_dets, pdf_nondets]).sort_values('mjd')[cols]
 
-    return pdf
+    pdf_dets = pd.DataFrame(r.json()[0]['lc'])
+    cols = ['mag', 'magerr', 'mjd', 'filter']
+    #pdf_nondets = pd.DataFrame(r.json()[0]['lcnondets'])
+    #pdf = pd.concat([pdf_dets, pdf_nondets]).sort_values('mjd')[cols]
+
+    return pdf_dets[cols]
 
 
 def get_atlas_lc_from_tns_name(tns_name: str):
