@@ -462,4 +462,4 @@ if __name__ == "__main__":
     import sys
     import doctest
 
-    sys.exit(doctest.testmod()[0])
+    sys.exit(doctest.testmod(verbosity=True)[0])
