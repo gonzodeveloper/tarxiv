@@ -1,14 +1,132 @@
 """Pull and process lightcurves"""
 
+from pyasassn.client import SkyPatrolClient
+from astropy.time import Time
+import atlasapiclient.client as atlas_client
 import io
+import re
 import requests
+import yaml
 import logging
-
 import pandas as pd
 
-_LOG = logging.getLogger(__name__)
-FINKAPIURL = "https://fink-portal.org"
 
+
+
+class LightCurves:
+
+    def __init__(self, config_file):
+        # Read in config
+        self.config_file = config_file
+        with open(config_file) as stream:
+            self.config = yaml.safe_load(stream)
+
+        self.logger = logging.getLogger("tarxiv_lightcurves")
+
+    def get_light_all_light_curves(self):
+        pass
+
+
+    def get_asas_sn_lc(self, ra_deg, dec_deg, radius=15):
+        """
+        Get ASAS-SN Lightcurve curve from coordinates using cone_search.
+        """
+        client = SkyPatrolClient(verbose=False)
+        query = f"WITH sources AS                " \ 
+                f"  (                            " \
+                f"      SELECT                   " \
+                f"          asas_sn_id,          " \
+                f"          ra_deg,              " \
+                f"          dec_deg,             " \
+                f"          catalog_sources,     " \
+                f"          DISTANCE(ra_deg, dec_deg, {ra_deg}, {dec_deg}) * 3600 AS angular_dist " \
+                f"     FROM master_list          " \ 
+                f"  )                            " \
+                f"SELECT *                       " \
+                f"FROM sources                   " \
+                f"WHERE angular_dist <= {radius} " \
+                f"ORDER BY angular_dist ASC      "
+
+        query = re.sub(r'(\s+)', ' ', query)
+        lcs = client.adql_query(query, download=True)
+
+        # Get nearest
+        nearest = lcs.catalog_info.iloc[0]
+        nearest_id = nearest['asas_sn_id']
+        nearest_dist = nearest['angular_dist']
+        catalog_sources = {catalog: client.query_list(int(nearest_id), catalog=catalog, id_col='asas_sn_id')['name'].to_list()[0]
+                           for catalog in nearest['catalog_sources']}
+        meta = {'asas_sn_id': nearest_id, 'cross_match_distance': nearest_dist, 'catalog_sources': catalog_sources}
+        lc_df =  lcs[nearest_id].data
+        lc_df['mjd'] = lc_df.apply(lambda row: Time(row['jd'], format='jd').mjd, axis=1)
+        lc_df.rename({"phot_filter": "filter"}, axis=1, inplace=True)
+
+        # Only return detections from not bad images
+        lc_df = lc_df[(lc_df['mag_err'] < 99) & (lc_df['quality'] != "B")]
+        return meta, lc_df[['mjd', 'mag', 'mag_err', 'filter']]
+
+    def get_ztf_lc(self, ra_deg, dec_deg, radius=15):
+        result = requests.post(
+            f"{self.config['fink_url']}/api/v1/conesearch",
+            json={"ra": ra_deg, "dec": dec_deg, "radius": radius, "columns": "i:objectId"},
+        )
+        # check status
+        if result.status_code != 200:
+            self.logger.warning({"status": "fink_error", "http_code": result.status_code})
+            return None
+
+        # get data for the match
+        matches = [val["i:objectId"] for val in r.json()]
+        if len(matches) == 0:
+            self.logger.info({"status": "fink_cone_search_miss"})
+            return None
+        # Lightcurve columns and values
+        cols = {
+            "i:magpsf": "mag",
+            "i:sigmapsf": "mag_err",
+            "i:fid": "filter",
+            "i:jd": "jd",
+            }
+        filter_map = {'1': 'g', '2': 'R', '3': 'i'}
+        # Query
+        result = requests.post(
+            f"{self.config['fink_url']}/api/v1/objects",
+            json={"objectId": matches[0], "columns": cols.keys()}
+        )
+        # check status
+        if result.status_code != 200:
+            self.logger.warning({"status": "fink_error", "http_code": result.status_code})
+            return None
+        # check returns
+        if result.json() == []:
+            self.logger.info({"status": "fink_ztf_id_miss"})
+            return None
+        lc_df = pd.read_json(io.BytesIO(result.content))
+        lc_df = lc_df.rename(cols, axis=1)
+        lc_df['mjd'] = lc_df.apply(lambda row: Time(row['jd'], format='jd').mjd, axis=1)
+        lc_df["filter"] = lc_df['filter'].astype(str).map(filter_map)
+        return lc_df
+
+
+    def get_atlas_lc(self, ra_deg, dec_deg, radius=15):
+        # First run cone search to get id
+        cone = atlas_client.ConeSearch(api_config_file=self.config_file,
+                                 payload={"ra": ra_deg,
+                                          "dec": dec_deg,
+                                          "radius": radius,
+                                          "requestType": "nearest"},
+                                 get_response=True)
+        atlas_id = cone.response_data['object_id'] #???
+        # Get light curve
+        curve = atlas_client.RequestSingleSourceData(api_config_file=self.config_file,
+                                                     atlas_id=atlas_id,
+                                                     get_response=True)
+        meta = curve.response_data[0]['object']
+        lc_json = curve.response_data[0]['lc']
+
+        # Process in dataframe
+        lc_df = pd.DataFrame(lc_json)
+        return lc_df
 
 def mapping_ztf_to_tarxiv():
     """Mapping between ZTF column names and tarxiv column names
@@ -21,11 +139,10 @@ def mapping_ztf_to_tarxiv():
     """
     # TODO: define tarxiv column names
     dic = {
-        "i:magpsf": "MAG",
-        "i:sigmapsf": "MAGERR",
-        "i:fid": "FILTER",
-        "i:jd": "TIME",
-        "whatelse?": "TBD",
+        "i:magpsf": "mag",
+        "i:sigmapsf": "mag_err",
+        "i:fid": "filter",
+        "i:jd": "jd",
     }
 
     return dic
@@ -234,7 +351,6 @@ def get_ztf_lc_from_coord(ra: float, dec: float, radius: float = 5.0):
 
     # get full lightcurves for all these alerts
     return get_ztf_lc_from_ztf_name(matches[0])
-
 
 if __name__ == "__main__":
     """Execute the test suite"""
