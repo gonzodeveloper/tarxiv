@@ -2,6 +2,7 @@
 
 import io
 import requests
+import numpy as np
 import logging
 import pandas as pd
 
@@ -237,25 +238,40 @@ def get_ztf_lc_from_coord(ra: float, dec: float, radius: float = 5.0):
     return get_ztf_lc_from_ztf_name(matches[0])
 
 
-def mapping_atlas_to_tarxiv():
-    """Mapping between ATLAS column names and tarxiv column names
+
+def mapping_atlas_to_tarxiv(atlas_json_data, include_nondets=False):
+    """
+    This function takes the ATLAS detections from the ATLAS JSON and turns them to OSC format
 
     Returns
     -------
-    dict
-        Dictionary containing mapping between
-        Fink column names and tarxiv column names
-    """
-    # TODO: define tarxiv column names
-    dic = {
-        "i:magpsf": "MAG",
-        "i:sigmapsf": "MAGERR",
-        "i:fid": "FILTER",
-        "i:jd": "TIME",
-        "whatelse?": "TBD",
-    }
+    List of Dictionaries to be placed under the "photometry" key in our JSON
 
-    return dic
+    """
+
+    # DETECTIONS
+    phot = pd.DataFrame(atlas_json_data['lc'])[['mjd', 'mag', 'magerr', 'filter', 'expname', ]]
+    phot.columns = ['time', 'magnitude', 'e_magnitude', 'band', 'telescope']
+    phot['upperlimit'] = False
+
+    # NONDETECTIONS
+    if include_nondets:
+        photnon = pd.DataFrame(atlas_json_data['lcnondets'])[['mjd', 'mag5sig', 'input', 'filter', 'expname', ]]
+        photnon.columns = ['time', 'magnitude', 'e_magnitude', 'band', 'telescope']
+        photnon['e_magnitude'] = np.nan
+        photnon['upperlimit'] = True
+
+        # sort by MJD
+        phot = pd.concat((phot, photnon)).sort_values('time', ascending=True)
+
+    # adds a column to record which ATLAS unit the value was taken from
+    phot['telescope'] = phot.telescope.apply(lambda x: x[:3]).values
+
+    # adds a column for the survey name
+    phot['survey'] = 'ATLAS'
+
+    # shenanigans to return the list of dictionaries expected for photometry
+    return list(phot.T.to_dict().values())
 
 
 def get_atlas_lc(atlas_name=None, tns_name=None, coord=None):
@@ -272,29 +288,25 @@ def get_atlas_lc(atlas_name=None, tns_name=None, coord=None):
 
     Returns
     -------
-    pd.DataFrame
-        Pandas DataFrame containing ATLAS data.
+    List of Dictionaries
 
     """
+    photometry = None
+
     if atlas_name is not None:
         # pdf = get_ztf_lc_from_ztf_name(ztf_name)
         raise Exception("Not implemented yet")
     elif tns_name is not None:
-        pdf = get_atlas_lc_from_tns_name(tns_name)
+        photometry= get_atlas_lc_from_tns_name(tns_name)
     elif coord is not None and isinstance(coord, tuple):
-        pdf = get_atlas_lc_from_coord(coord[0], coord[1])
+        photometry = get_atlas_lc_from_coord(coord[0], coord[1])
 
     else:
         _LOG.error(
             "You should choose an object name or provide coordinates to get ATLAS lightcurves"
         )
 
-    # TODO: perform the column name conversion before returning
-    # TODO: `mapping_atlas_to_tarxiv`
-
-    # TODO: do we want to return a DataFrame or JSON is fine?
-    # TODO: JSON will be faster (no conversion), but messier.
-    return pdf
+    return photometry
 
 
 def get_atlas_lc_from_atlas_id(
@@ -310,13 +322,12 @@ def get_atlas_lc_from_atlas_id(
 
     Returns
     -------
-    pd.DataFrame
-        Pandas DataFrame containing ATLAS data. Each row is a measurement.
+    List of Dictionaries to be placed under the "photometry" key in our JSON
 
     Examples
     --------
-    >>> pdf = get_atlas_lc_from_atlas_id("1022810791281932600")
-    >>> assert not pdf.empty, "Oooops there should be data for 1022810791281932600 (SN 2024utu) in ATLAS"
+    >>> phot = get_atlas_lc_from_atlas_id("1022810791281932600")
+    >>> assert not len(phot) == 0, "Oooops there should be data for ATLAS ID 1022810791281932600"
     """
     r = requests.post(
         f"{ATLASAPIURL}objects/",
@@ -324,7 +335,6 @@ def get_atlas_lc_from_atlas_id(
         headers=atlas_headers,
     )
 
-    # TODO: need to format the ATLAS data to TarXiv format
 
     if r.status_code != 200:
         _LOG.warning(
@@ -337,25 +347,8 @@ def get_atlas_lc_from_atlas_id(
     if r.json() == []:
         _LOG.warning("Data for the ATLAS ID {} not found".format(atlas_id))
 
-    # TODO: only give the lc dets and lc nondets
-    # pdf = pd.read_json(io.BytesIO(r.content))
-    pdf_dets = pd.DataFrame(r.json()[0]["lc"])
-    cols = [
-        "mag",
-        "magerr",
-        "mjd",
-        "exptime",
-        "filter",
-        "expname",
-        "ra",
-        "dec",
-        "mag5sig",
-        "date_inserted",
-    ]
-    pdf_nondets = pd.DataFrame(r.json()[0]["lcnondets"])
-    pdf = pd.concat([pdf_dets, pdf_nondets]).sort_values("mjd")[cols]
 
-    return pdf
+    return mapping_atlas_to_tarxiv(r.json()[0], include_nondets = False)
 
 
 def get_atlas_lc_from_tns_name(tns_name: str):
@@ -373,8 +366,8 @@ def get_atlas_lc_from_tns_name(tns_name: str):
 
     Examples
     --------
-    >>> pdf = get_atlas_lc_from_tns_name("2024utu")
-    >>> assert not pdf.empty, "Oooops there should be data for SN 2024utu in ATLAS"
+    >>> phot = get_atlas_lc_from_tns_name("2024utu")
+    >>> assert not len(phot) == 0, "Oooops there should be data for SN 2024utu in ATLAS"
     """
     # TODO: strip names of initial AT or SN before putting into the payload
     # 1) Get the TNS name from ATLAS
@@ -418,16 +411,16 @@ def get_atlas_lc_from_coord(ra: float, dec: float, radius: float = 5.0):
 
     Returns
     -------
-    pd.DataFrame
-        Pandas DataFrame. Each row is a measurement.
+    List of Dictionaries
 
     Examples
     --------
-    >>> pdf = get_atlas_lc_from_coord(37.044652, 28.326629)
-    >>> assert not pdf.empty, "Oooops there should be data for SN 2024utu (ZTF24abeiqfc) in Fink!"
+    >>> phot = get_atlas_lc_from_coord(37.044652, 28.326629)
+    >>> assert not len(phot) == 0, "Oooops there should be data for SN 2024utu (ZTF24abeiqfc) in Fink!"
 
+    # TODO: what's this below?
     # artifically getting blending
-    >>> out = get_atlas_lc_from_coord(37.044652, 28.326629, 60)
+    # >>> out = get_atlas_lc_from_coord(37.044652, 28.326629, 60)
 
 
     # Check that crazy input returns empty output
