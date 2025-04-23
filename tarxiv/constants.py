@@ -1,6 +1,6 @@
 import os
 
-FINKAPIURL = "https://fink-portal.org"
+FINKAPIURL = "https://api.fink-portal.org"
 ATLASAPIURL = "https://star.pst.qub.ac.uk/sne/atlas4/api/"
 
 
