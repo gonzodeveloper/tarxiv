@@ -26,7 +26,7 @@ jobs:
         pip install ruff
     - name: tarxiv
       run: |
-        ruff check --statistics --preview tarxiv/*.py
+        ruff check --statistics --preview --fix tarxiv/*.py
         ruff format --check --preview tarxiv/*.py
 
     - name: bin 
