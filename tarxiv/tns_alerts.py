@@ -160,7 +160,9 @@ class TarxivTNS:
                     # Get entry info from TNS
                     tns_entry = self.get_entry(objname)
                     # Insert to couchbase
+                    # TODO: need to change this so that we abide by our schema we've chosen
                     self.txv_db.upsert(objname, tns_entry, "tns")
+                    # TODO: we need a txv_lc_db object to upsert LC decoupled from the main doc
 
         # Mark as read
         service.users().messages().modify(
