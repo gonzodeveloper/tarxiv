@@ -121,13 +121,17 @@ class LightCurves:
                                           "radius": radius,
                                           "requestType": "nearest"},
                                  get_response=True)
-        atlas_id = cone.response_data['object_id'] #???
+        atlas_id = cone.response_data['object']  # The ATLAS is from cone search
+
         # Get light curve
         curve = atlas_client.RequestSingleSourceData(api_config_file=self.config_file,
                                                      atlas_id=atlas_id,
                                                      get_response=True)
         meta = curve.response_data[0]['object']
         lc_json = curve.response_data[0]['lc']
+
+        # [HFS] TODO: should we invoke the mapping function here? if yes it takes in
+        # the curve.response_data[0] directly
 
         # Process in dataframe
         lc_df = pd.DataFrame(lc_json)
