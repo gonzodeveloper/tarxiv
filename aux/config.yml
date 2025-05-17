@@ -1,0 +1,53 @@
+# Configuration File for the tarxiv system.
+# Must be renamed as config.yml!
+
+# General
+log_level: "debug"
+log_dir: "./"   #"/home/almalinux/logs/"
+
+# hosting information
+host: 157.136.254.204
+port: 9000
+
+# database information
+database:
+  host: localhost
+  user: tarxiv_user
+  pass: t@rxiv_COUCH
+  
+# tns certifications/params
+tns:
+  id: 191311
+  type: "bot"
+  name: "tarxiv"
+  site: "https://www.wis-tns.org"
+  email: "tns@weizmann.ac.il"
+  api_key: "33912ce9ff5bb4a429957376e4f5ceb8e045b99d"
+  rate_limit: 4
+  # Source info for schema
+  associated_sources: ["tns"]
+
+# email certifications (for ingesting TNS notices)
+gmail:
+  secrets_file: "my_cred_file.json"
+  token_name: "gmail_token.json"
+  scopes:
+    - 'https://www.googleapis.com/auth/gmail.readonly'
+    - 'https://www.googleapis.com/auth/gmail.modify'
+  polling_interval: 4
+
+# ATLAS Info
+token: "3731c3f6b62f812709d2490a60290186aa9e283e"
+base_url: "https://psweb.mp.qub.ac.uk/sne/atlas4/api/"
+atlas:
+  associated_sources: ["atlas_twb", "atlas_survey", "sherlock"]
+
+# Fink/ZTF info
+fink_url: "https://api.fink-portal.org/"
+ztf:
+  associated_sources: ["ztf_survey", "fink", "mangrove"]
+
+# ASAS-SN info
+asas-sn:
+  associated_sources: ["asas-sn_survey", "asas-sn_skypatrol"]
+
