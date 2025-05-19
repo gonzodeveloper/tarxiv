@@ -1,3 +1,4 @@
+atlasapiclient
 fink-tns
 hop-client
 pandas

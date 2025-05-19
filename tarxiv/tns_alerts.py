@@ -90,7 +90,7 @@ class TarxivTNS:
         response = requests.post(get_url, headers=headers, data=get_data)
         # Log
         self.logger.debug({"action": "retreived", "objname": objname})
-        return json.loads(response.text)["data"]["reply"]
+        return json.loads(response.text)["data"]
 
     def download_bulk_tns(self):
         # Run request to TNS Server
