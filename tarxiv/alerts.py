@@ -42,9 +42,9 @@ class Gmail(TarxivModule):
         # Write new token
         with open(token, "w") as f:
             f.write(self.creds.to_json())
-
-        # Connect to email
+        # Connect to service
         self.service = build("gmail", "v1", credentials=self.creds)
+        # Connect to email
         self.logger.info({"status": "connected"})
 
         # Create internal queue
@@ -65,7 +65,7 @@ class Gmail(TarxivModule):
         return result
 
 
-    def parse_message(self, message):
+    def parse_message(self, message, service):
         """
         Parse a message for tns object names
         :param message:
@@ -75,7 +75,7 @@ class Gmail(TarxivModule):
         result = None
 
         # Pull message from gmail
-        msg = self.service.users().messages().get(userId="me", id=message["id"]).execute()
+        msg = service.users().messages().get(userId="me", id=message["id"]).execute()
         headers = msg["payload"]["headers"]
         for hdr in headers:
             # Only process emails from TNS
@@ -106,11 +106,14 @@ class Gmail(TarxivModule):
         threading.Thread(target=self._monitoring_thread, daemon=True).start()
 
     def _monitoring_thread(self):
+        # Connect to service
+        service = build("gmail", "v1", credentials=self.creds)
+
         while True:
             # Call the Gmail API
             self.logger.debug({"action": "checking_messages"})
             results = (
-                self.service.users()
+                service.users()
                 .messages()
                 .list(userId="me", labelIds=["INBOX"], q="is:unread")
                 .execute()
@@ -123,7 +126,7 @@ class Gmail(TarxivModule):
 
             for message in messages:
                 # Parse message for tns alerts
-                alerts = self.parse_message(message)
+                alerts = self.parse_message(message, service)
 
                 if alerts is None:
                     self.mark_read(message)

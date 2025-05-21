@@ -4,14 +4,14 @@ from couchbase.cluster import Cluster
 from couchbase.options import ClusterOptions
 from couchbase.auth import PasswordAuthenticator
 import json
-
+import os
 
 class TarxivDB(TarxivModule):
     """Base class for tarxiv data"""
 
     def __init__(self, config_dir, debug=False):
         super().__init__("tarxiv-couchbase", config_dir, debug)
-        self.schema_file = config_dir + "/schema.json"
+        self.schema_file = os.path.join(config_dir, "schema.json")
         # Connect to Couchbase
         self.logger.info("connecting to couchbase")
         connection_str = "couchbase://" + self.config["database"]["host"]
@@ -35,7 +35,7 @@ class TarxivDB(TarxivModule):
 
     def get(self, object_name, collection):
         coll = self.conn.collection(collection)
-        result = coll.get(object_name)
+        result = coll.get(object_name).value
         self.logger.debug({"action": "retrieved", "object_name": object_name, "collection": collection})
         return result
 

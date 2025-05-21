@@ -9,7 +9,7 @@ class TarxivModule:
         # Set module
         self.module = module
         # Read in config
-        self.config_file = os.path.join(config_dir, "config.yaml")
+        self.config_file = os.path.join(config_dir, "config.yml")
         with open(self.config_file) as stream:
             self.config = yaml.safe_load(stream)
 

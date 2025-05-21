@@ -1,56 +1,56 @@
 {
   "tns": {
     "name": "tns",
-    "bibcode": "2025",
-    "reference": "",
+    "bibcode": "2021AAS...23742305G",
+    "reference": "Gal-Yam et al. 2021",
     "alias": 0
   },
   "atlas_twb": {
     "name": "atlas_twb",
-    "bibcode": "10.1088/1538-3873/ab936e",
+    "bibcode": "2020PASP..132h5002S",
     "reference": "Smith et al. 2020",
     "alias": 1
   },
   "atlas_survey": {
     "name": "atlas_survey",
-    "bibcode": "10.1088/1538-3873/aabadf",
+    "bibcode": "2018PASP..130f4505T",
     "reference": "Tonry et al. 2018",
     "alias": 2
   },
   "ztf_survey": {
     "name": "ztf_survey",
-    "bibcode": "10.1088/1538-3873/aabadf",
-    "reference": "Tonry et al. 2018",
+    "bibcode": "2019PASP..131a8002B",
+    "reference": "Belim et al. 2019",
     "alias": 3
   },
   "fink": {
     "name": "fink",
-    "bibcode": "10.1088/1538-3873/aabadf",
-    "reference": "Tonry et al. 2018",
+    "bibcode": "2021MNRAS.501.3272M",
+    "reference": "Möller et al. 2020",
     "alias": 4
   },
   "asas-sn_survey": {
     "name": "asas-sn_survey",
-    "bibcode": "10.1088/1538-3873/aabadf",
-    "reference": "Tonry et al. 2018",
+    "bibcode": "2014ApJ...788...48S",
+    "reference": "Shappee et al. 2014",
     "alias": 5
   },
   "asas-sn_skypatrol": {
     "name": "asas-sn_skypatrol",
-    "bibcode": "10.1088/1538-3873/aabadf",
-    "reference": "Tonry et al. 2018",
+    "bibcode": "2023arXiv230403791H",
+    "reference": "Hart et al. 2023",
     "alias": 6
   },
   "sherlock": {
     "name": "sherlock",
-    "bibcode": "10.1088/1538-3873/aabadf",
-    "reference": "Tonry et al. 2018",
+    "bibcode": "10.5281/zenodo.8038057",
+    "reference": "Young et al. 2023",
     "alias": 7
   },
   "mangrove": {
     "name": "mangrove",
-    "bibcode": "10.1088/1538-3873/aabadf",
-    "reference": "Tonry et al. 2018",
+    "bibcode": "2020MNRAS.492.4768D",
+    "reference": "Ducoin et al. 2020",
     "alias": 8
   }
 }

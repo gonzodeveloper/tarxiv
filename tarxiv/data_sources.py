@@ -1,6 +1,8 @@
 """Pull and process lightcurves"""
 from .utils import TarxivModule
 import atlasapiclient.client as atlas_client
+from atlasapiclient.exceptions import ATLASAPIClientError
+
 from pyasassn.client import SkyPatrolClient
 from astropy.time import Time
 from collections import OrderedDict
@@ -57,8 +59,7 @@ class Survey(TarxivModule):
             # Append sources to schema
             for source in self.config[self.module]['associated_sources']:
                 obj_meta["sources"].append(self.schema_sources[source])
-            for ids in survey_meta['ids']:
-                obj_meta["ids"].append(ids)
+
             for field, meta in survey_meta.items():
                 if type(meta) is list:
                     for item in meta:
@@ -86,7 +87,7 @@ class Survey(TarxivModule):
 class ASAS_SN(Survey):
 
     def __init__(self, *args, **kwargs):
-        super().__init__("observer", *args, **kwargs)
+        super().__init__("asas-sn", *args, **kwargs)
 
         # Also need ASAS-SN client
         self.client = SkyPatrolClient(verbose=False)
@@ -116,7 +117,7 @@ class ASAS_SN(Survey):
         # Get meta
         nearest = lcs.catalog_info.iloc[0]
         nearest_id = nearest['asas_sn_id']
-        meta = {'identifiers': [{"name": nearest_id, 'source': 6}]}
+        meta = {'identifiers': [{"name": str(nearest_id), 'source': 6}]}
         # Get LC
         lc_df =  lcs[nearest_id].data
         lc_df['mjd'] = lc_df.apply(lambda row: Time(row['jd'], format='jd').mjd, axis=1)
@@ -172,6 +173,11 @@ class ZTF(Survey):
         if result_meta["d:mangrove_2MASS_name"] != 'None':
             host_name = {"name": result_meta["d:mangrove_2MASS_name"], "source": 8}
             meta['host_name'].append(host_name)
+        if result_meta["d:mangrove_HyperLEDA_name"] != 'None':
+            host_name = {"name": result_meta["d:mangrove_HyperLEDA_name"], "source": 8}
+            meta['host_name'].append(host_name)
+        if len(meta['host_name']) == 0:
+            del meta['host_name']
 
         # Lightcurve columns and values
         cols = {
@@ -199,45 +205,57 @@ class ATLAS(Survey):
     def __init__(self, *args, **kwargs):
         super().__init__("atlas", *args, **kwargs)
 
-    def get_atlas_lc(self, ra_deg, dec_deg, radius=15):
-        # First run cone search to get id
-        cone_res = atlas_client.ConeSearch(api_config_file=self.config_file,
-                                 payload={"ra": ra_deg,
-                                          "dec": dec_deg,
-                                          "radius": radius,
-                                          "requestType": "nearest"},
-                                 get_response=True)
-        atlas_id = cone_res.response_data['object']  # The ATLAS is from cone search
+    def get_object(self, ra_deg, dec_deg, radius=15):
+        try:
+            # First run cone search to get id
+            cone_res = atlas_client.ConeSearch(api_config_file=self.config_file,
+                                     payload={"ra": ra_deg,
+                                              "dec": dec_deg,
+                                              "radius": radius,
+                                              "requestType": "nearest"},
+                                     get_response=True)
+        except ATLASAPIClientError:
+            return None, pd.DataFrame()
 
-        # Get light curve
-        curve_res = atlas_client.RequestSingleSourceData(api_config_file=self.config_file,
-                                                     atlas_id=str(atlas_id),
-                                                     get_response=True)
-        # Get relevent meta
-        meta_res = curve_res.response_data[0]['object']
-        meta_res['sherlock'] = curve_res.response_data[0]['sherlock_crossmatches'][0]
-        meta = {"indentifiers": [{"name": meta_res["id"], "source": 1},
-                                 {"name": meta_res["atlas_designation", "source": 2]}]
-                }
-        if meta_res["sherlock"]["z"] is not None:
-            meta["redshift"] = {"value": meta_res["sherlock"]["z"], "source": 7}
+        # Get atlas id and query for data
+        try:
+            atlas_id = cone_res.response_data['object']  # The ATLAS is from cone search
 
-        # Coerce dataframe
-        lc_json = curve_res.response_data[0]['lc']
+            # Get light curve
+            curve_res = atlas_client.RequestSingleSourceData(api_config_file=self.config_file,
+                                                         atlas_id=str(atlas_id),
+                                                         get_response=True)
+        except ATLASAPIClientError:
+            return None, pd.DataFrame()
+
+        # Contains meta and lc
+        result = curve_res.response_data[0]
+
+        # Insert meta data
+        meta = {"identifiers": [{"name": result["object"]["id"], "source": 1}]}
+        if result["object"]["atlas_designation"] is not None:
+            atlas_name = {"name": result["object"]["atlas_designation"], "source": 2}
+            meta["identifiers"].append(atlas_name)
+        # Add sherlock crossmatch if exists
+        if result["sherlock_crossmatches"]:
+            result['sherlock'] = result['sherlock_crossmatches'][0]
+            if result["sherlock"]["z"] is not None:
+                meta["redshift"] = {"value": result["sherlock"]["z"], "source": 7}
 
         # DETECTIONS
-        lc_df = pd.DataFrame(lc_json)[['mjd', 'mag', 'magerr', 'filter']]
-        lc_df.columns = ['mjd', 'mag', 'mag_err', 'filter']
+        lc_df = pd.DataFrame(result['lc'])[['mjd', 'mag', 'magerr', 'filter', "expname"]]
+        lc_df.columns = ['mjd', 'mag', 'mag_err', 'filter', "expname"]
         #lc_df['upperlimit'] = False
         # NONDETECTIONS
-        lc_df_non = pd.DataFrame(lc_json['lcnondets'])[['mjd', 'mag5sig', 'input', 'filter', 'expname', ]]
-        lc_df_non.columns = ['mjd', 'mag', 'mag_err', 'filter']
+        lc_df_non = pd.DataFrame(result['lcnondets'])[['mjd', 'mag5sig', 'input', 'filter', "expname"]]
+        lc_df_non.columns = ['mjd', 'mag', 'mag_err', 'filter', "expname"]
         lc_df_non['mag_err'] = np.nan
         #lc_df_non['upperlimit'] = True
         # Concat
         lc_df = pd.concat((lc_df, lc_df_non))
         # Add a column to record which ATLAS unit the value was taken from
-        lc_df['unit'] = lc_df.telescope.apply(lambda x: x[:3]).values
+        lc_df['unit'] = lc_df["expname"].str[:3]
+        lc_df.drop('expname', axis=1, inplace=True)
         lc_df['survey'] = "ATLAS"
 
         return meta, lc_df
@@ -245,7 +263,7 @@ class ATLAS(Survey):
 class TNS(Survey):
 
     def __init__(self, *args, **kwargs):
-        super().__init__("tarxiv", *args, **kwargs)
+        super().__init__("tns", *args, **kwargs)
 
         # Set attributes
         self.site = self.config["tns"]["site"]
@@ -269,12 +287,30 @@ class TNS(Survey):
             ("objid", ""),
             ("objname", objname),
             ("photometry", "0"),
-            ("spectra", "1"),
+            ("spectra", "0"),
         ])
         get_data = {"api_key": self.api_key, "data": json.dumps(obj_request)}
         response = requests.post(get_url, headers=headers, data=get_data)
         # Meta
-        meta = json.loads(response.text)["data"]
+        result = json.loads(response.text)["data"]
+        # Reduce meta to what we want
+        meta = {
+            "identifiers": {"name": result["objname"], "source": 0},
+            "ra_deg": {"value": result["radeg"], "source": 0},
+            "dec_deg": {"value": result["decdeg"], "source": 0},
+            "ra_hms": {"value": result["ra"], "source": 0},
+            "dec_dms": {"value": result["dec"], "source": 0},
+            "object_type": [{"value": result["name_prefix"], "source": 0},
+                         {"value": result["object_type"]["name"], "source": 0}],
+            "discovery_date": {"value": result["discoverydate"], "source": 0},
+            "reporting_group": {"value": result["reporting_group"]['group_name'], "source": 0},
+            "discovery_data_source": {"value": result["discovery_data_source"]['group_name'], "source": 0},
+        }
+        if result["redshift"] is not None:
+            meta["redshift"] = {"value": result["redshift"], "source": 0}
+        if result["hostname"] is not None:
+            meta["host_name"] = {"value": result["hostname"], "source": 0}
+
         # TNS only returns meta
         return meta, pd.DataFrame()
 

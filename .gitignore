@@ -143,3 +143,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+
+# Config files with credentials
+aux/config.yml
+aux/gmail_token.json
+aux/my_cred_file.json
+
