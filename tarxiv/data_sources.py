@@ -1,0 +1,305 @@
+"""Pull and process lightcurves"""
+from .utils import TarxivModule
+import atlasapiclient.client as atlas_client
+from pyasassn.client import SkyPatrolClient
+from astropy.time import Time
+from collections import OrderedDict
+
+import pandas as pd
+import numpy as np
+import requests
+import zipfile
+import json
+import time
+import io
+import re
+import os
+
+class Survey(TarxivModule):
+    """Base class to interact with a Tarxiv survey or data source."""
+    def __init__(self, module, config_dir, debug=False):
+        super().__init__(module, config_dir, debug)
+
+        # Read in schema sources
+        schema_sources = os.path.join(config_dir, "sources.json")
+        with open(schema_sources) as f:
+            self.schema_sources = json.load(f)
+
+    def get_object(self, *args, **kwargs):
+        """
+        Query the survey for object at a given set of coordinates.
+        Must return metadata dict containing at least one survey designation, and any additional meta
+                e.g. {"identifiers" : [{"name": ATLAS25XX, "source": 3}, ...],
+                     {"meta": {"redshift": {"value": 0.003, "source": 8},
+                               "hostname": [{"value": "NCGXXXX", "source": 9},
+                                            {"value": "2MASS XXXXX", "source": 10}]
+                               ...}}
+        Also return lightcurve dataframe with columns [mjd, mag, mag_err, filter, unit, survey],
+            mjd: modified julian date,
+            mag: magnitude,
+            mag_err: magnitude error,
+            filter: bandpass filter,
+            unit: telescope or camera for given measurement (if survey only has one unit, use 'main')
+            survey: survey name.
+        :return: survey_meta; dict (None if no results), survey_lc; DataFrame (empty df if no results)
+        """
+        raise NotImplementedError("each survey must implement their own logic to get meta/lightcurve")
+
+    def update_object_meta(self, obj_meta, survey_meta):
+        """
+        Update the object meta schema with data from the survey meta returned by get_object.
+        :param obj_meta: existing object meta schema; dict
+        :param survey_meta: survey meta returned from get_object; dict
+        :return:updated object meta dictionary
+        """
+        # Only update if we get returned object
+        if survey_meta is not None:
+            # Append sources to schema
+            for source in self.config[self.module]['associated_sources']:
+                obj_meta["sources"].append(self.schema_sources[source])
+            for ids in survey_meta['ids']:
+                obj_meta["ids"].append(ids)
+            for field, meta in survey_meta.items():
+                if type(meta) is list:
+                    for item in meta:
+                        obj_meta[field].append(item)
+                else:
+                    obj_meta[field].append(meta)
+
+        return obj_meta
+
+    def update_object_lc(self, obj_lc, survey_lc):
+        """
+        Transform survey lightcurve to json and append the existing object lightcurve
+        :param obj_lc: object lightcurve; list
+        :param survey_lc: survey lightcurve; dataframe
+        :return:
+        """
+        # Append lightcurve
+        lc_json = survey_lc.to_dict(orient='records')
+        for item in lc_json:
+            obj_lc.append(item)
+
+        return obj_lc
+
+
+class ASAS_SN(Survey):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__("observer", *args, **kwargs)
+
+        # Also need ASAS-SN client
+        self.client = SkyPatrolClient(verbose=False)
+
+    def get_object(self, ra_deg, dec_deg, radius=15):
+        """
+        Get ASAS-SN Lightcurve curve from coordinates using cone_search.
+        """
+        # Query client
+        query = f"WITH sources AS                " \
+                f"  (                            " \
+                f"      SELECT                   " \
+                f"          asas_sn_id,          " \
+                f"          ra_deg,              " \
+                f"          dec_deg,             " \
+                f"          catalog_sources,     " \
+                f"          DISTANCE(ra_deg, dec_deg, {ra_deg}, {dec_deg}) AS angular_dist " \
+                f"     FROM master_list          " \
+                f"  )                            " \
+                f"SELECT *                       " \
+                f"FROM sources                   " \
+                f"WHERE angular_dist <= ARCSEC({radius}) " \
+                f"ORDER BY angular_dist ASC      "
+
+        query = re.sub(r'(\s+)', ' ', query)
+        lcs = self.client.adql_query(query, download=True)
+        # Get meta
+        nearest = lcs.catalog_info.iloc[0]
+        nearest_id = nearest['asas_sn_id']
+        meta = {'identifiers': [{"name": nearest_id, 'source': 6}]}
+        # Get LC
+        lc_df =  lcs[nearest_id].data
+        lc_df['mjd'] = lc_df.apply(lambda row: Time(row['jd'], format='jd').mjd, axis=1)
+        lc_df.rename({"phot_filter": "filter", "camera": "unit"}, axis=1, inplace=True)
+        # Do not return data from bad images
+        lc_df = lc_df[lc_df['quality'] != "B"]
+        # Throw out non_detections if not specified
+        # if non_detections is False:
+        #    lc_df = lc_df[lc_df['mag_err'] < 99]
+        lc_df['survey'] = "ASAS-SN"
+        return meta, lc_df[['mjd', 'mag', 'mag_err', 'filter', 'unit', 'survey']]
+
+
+class ZTF(Survey):
+    def __init__(self, *args, **kwargs):
+        super().__init__("ztf", *args, **kwargs)
+
+    def get_object(self, ra_deg, dec_deg, radius=15):
+        result = requests.post(
+            f"{self.config['fink_url']}/api/v1/conesearch",
+            json={"ra": ra_deg, "dec": dec_deg, "radius": radius, "columns": "i:objectId"},
+        )
+        # check status
+        if result.status_code != 200:
+            self.logger.warning({"status": "fink_error", "http_code": result.status_code})
+            return None, pd.DataFrame()
+        # get data for the match
+        matches = [val["i:objectId"] for val in result.json()]
+        ztf_name = matches[0]
+
+        if len(matches) == 0:
+            self.logger.info({"status": "fink_cone_search_miss"})
+            return None, pd.DataFrame()
+
+        # Query
+        result = requests.post(
+            f"{self.config['fink_url']}/api/v1/objects",
+            json={"objectId": ztf_name, "output-format": "json"}
+        )
+        # check status
+        if result.status_code != 200:
+            self.logger.warning({"status": "fink_error", "http_code": result.status_code})
+            return None, pd.DataFrame()
+        # check returns
+        if result.json() == []:
+            self.logger.info({"status": "fink_ztf_id_miss"})
+            return None, pd.DataFrame()
+
+        # Metadata on each line of photometry, we only take first row (d prefix are non-phot)
+        result_meta = result.json()[0]
+        meta = {"identifiers": [{"name": ztf_name, "source": 3}]}
+        meta['host_name'] = []
+        if result_meta["d:mangrove_2MASS_name"] != 'None':
+            host_name = {"name": result_meta["d:mangrove_2MASS_name"], "source": 8}
+            meta['host_name'].append(host_name)
+
+        # Lightcurve columns and values
+        cols = {
+            "i:magpsf": "mag",
+            "i:sigmapsf": "mag_err",
+            "i:fid": "filter",
+            "i:jd": "jd",
+            }
+        filter_map = {'1': 'g', '2': 'R', '3': 'i'}
+        # Push into DataFrame
+        lc_df = pd.read_json(io.BytesIO(result.content))
+        lc_df = lc_df.rename(cols, axis=1)
+        lc_df = lc_df[list(cols.values())]
+        lc_df['mjd'] = lc_df.apply(lambda row: Time(row['jd'], format='jd').mjd, axis=1)
+        lc_df["filter"] = lc_df['filter'].astype(str).map(filter_map)
+        # JD now unneeded
+        lc_df.drop('jd', axis=1, inplace=True)
+        # Add unit/survey columns
+        lc_df["unit"] = "main"
+        lc_df["survey"] = "ZTF"
+
+        return meta, lc_df
+
+class ATLAS(Survey):
+    def __init__(self, *args, **kwargs):
+        super().__init__("atlas", *args, **kwargs)
+
+    def get_atlas_lc(self, ra_deg, dec_deg, radius=15):
+        # First run cone search to get id
+        cone_res = atlas_client.ConeSearch(api_config_file=self.config_file,
+                                 payload={"ra": ra_deg,
+                                          "dec": dec_deg,
+                                          "radius": radius,
+                                          "requestType": "nearest"},
+                                 get_response=True)
+        atlas_id = cone_res.response_data['object']  # The ATLAS is from cone search
+
+        # Get light curve
+        curve_res = atlas_client.RequestSingleSourceData(api_config_file=self.config_file,
+                                                     atlas_id=str(atlas_id),
+                                                     get_response=True)
+        # Get relevent meta
+        meta_res = curve_res.response_data[0]['object']
+        meta_res['sherlock'] = curve_res.response_data[0]['sherlock_crossmatches'][0]
+        meta = {"indentifiers": [{"name": meta_res["id"], "source": 1},
+                                 {"name": meta_res["atlas_designation", "source": 2]}]
+                }
+        if meta_res["sherlock"]["z"] is not None:
+            meta["redshift"] = {"value": meta_res["sherlock"]["z"], "source": 7}
+
+        # Coerce dataframe
+        lc_json = curve_res.response_data[0]['lc']
+
+        # DETECTIONS
+        lc_df = pd.DataFrame(lc_json)[['mjd', 'mag', 'magerr', 'filter']]
+        lc_df.columns = ['mjd', 'mag', 'mag_err', 'filter']
+        #lc_df['upperlimit'] = False
+        # NONDETECTIONS
+        lc_df_non = pd.DataFrame(lc_json['lcnondets'])[['mjd', 'mag5sig', 'input', 'filter', 'expname', ]]
+        lc_df_non.columns = ['mjd', 'mag', 'mag_err', 'filter']
+        lc_df_non['mag_err'] = np.nan
+        #lc_df_non['upperlimit'] = True
+        # Concat
+        lc_df = pd.concat((lc_df, lc_df_non))
+        # Add a column to record which ATLAS unit the value was taken from
+        lc_df['unit'] = lc_df.telescope.apply(lambda x: x[:3]).values
+        lc_df['survey'] = "ATLAS"
+
+        return meta, lc_df
+
+class TNS(Survey):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__("tarxiv", *args, **kwargs)
+
+        # Set attributes
+        self.site = self.config["tns"]["site"]
+        self.api_key = self.config["tns"]["api_key"]
+
+        # Create marker
+        tns_marker_dict = {
+            "tns_id": self.config["tns"]["id"],
+            "type": self.config["tns"]["type"],
+            "name": self.config["tns"]["name"],
+        }
+        self.marker = "tns_marker" + json.dumps(tns_marker_dict, separators=(",", ":"))
+
+    def get_object(self, objname):
+        # Wait to avoid rate limiting
+        time.sleep(self.config["tns"]["rate_limit"])
+        # Run request to TNS server
+        get_url = self.site + "/api/get/object"
+        headers = {"User-Agent": self.marker}
+        obj_request = OrderedDict([
+            ("objid", ""),
+            ("objname", objname),
+            ("photometry", "0"),
+            ("spectra", "1"),
+        ])
+        get_data = {"api_key": self.api_key, "data": json.dumps(obj_request)}
+        response = requests.post(get_url, headers=headers, data=get_data)
+        # Meta
+        meta = json.loads(response.text)["data"]
+        # TNS only returns meta
+        return meta, pd.DataFrame()
+
+    def download_bulk_tns(self):
+        # Run request to TNS Server
+        self.logger.info("pulling bulk tns objects")
+        get_url = (
+            self.site + "/system/files/tns_public_objects/tns_public_objects.csv.zip"
+        )
+        json_data = [
+            ("api_key", (None, self.api_key)),
+        ]
+        headers = {"User-Agent": self.marker}
+        response = requests.post(get_url, files=json_data, headers=headers)
+
+        # Write to bytesio and convert to pandas
+        with zipfile.ZipFile(io.BytesIO(response.content)) as myzip:
+            data = myzip.read(name="tns_public_objects.csv")
+
+        return pd.read_csv(io.BytesIO(data), skiprows=[0])
+
+
+if __name__ == "__main__":
+    """Execute the test suite"""
+    import sys
+    import doctest
+
+    sys.exit(doctest.testmod()[0])

@@ -1,0 +1,15 @@
+{
+  "schema": "https://github.com/astrocatalogs/schema/README.md",
+  "sources": [],
+  "identifiers": [],
+  "ra_deg": [],
+  "dec_deg": [],
+  "ra_hms": [],
+  "dec_dms": [],
+  "object_type": [],
+  "discovery_date": [],
+  "reporting_group": [],
+  "discovery_data_source": [],
+  "redshift": [],
+  "host_name": []
+}

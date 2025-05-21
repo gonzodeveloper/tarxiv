@@ -2,6 +2,32 @@
 import logging
 import yaml
 import sys
+import os
+
+class TarxivModule:
+    def __init__(self, module, config_dir, debug=False):
+        # Set module
+        self.module = module
+        # Read in config
+        self.config_file = os.path.join(config_dir, "config.yaml")
+        with open(self.config_file) as stream:
+            self.config = yaml.safe_load(stream)
+
+        # Logger
+        self.logger = logging.getLogger(self.module)
+        # Set log level
+        if debug:
+            self.logger.setLevel(logging.DEBUG)
+        else:
+            self.logger.setLevel(logging.INFO)
+
+        # Print log to stdout
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(formatter)
+        self.logger.addHandler(handler)
+        # Status
+        self.logger.info({"status": "initializing", "module": self.module})
 
 
 def read_config(config_file):
