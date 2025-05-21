@@ -125,10 +125,9 @@ class ASAS_SN(Survey):
         # Do not return data from bad images
         lc_df = lc_df[lc_df['quality'] != "B"]
         # Throw out non_detections if not specified
-        # if non_detections is False:
-        #    lc_df = lc_df[lc_df['mag_err'] < 99]
+        lc_df = lc_df[lc_df['mag_err'] < 99]
         lc_df['survey'] = "ASAS-SN"
-        return meta, lc_df[['mjd', 'mag', 'mag_err', 'filter', 'unit', 'survey']]
+        return meta, lc_df[['mjd', 'mag', 'mag_err', 'limit', 'filter', 'unit', 'survey']]
 
 
 class ZTF(Survey):
@@ -185,6 +184,7 @@ class ZTF(Survey):
             "i:sigmapsf": "mag_err",
             "i:fid": "filter",
             "i:jd": "jd",
+            "i:diffmaglim": "limit"
             }
         filter_map = {'1': 'g', '2': 'R', '3': 'i'}
         # Push into DataFrame
@@ -243,16 +243,16 @@ class ATLAS(Survey):
                 meta["redshift"] = {"value": result["sherlock"]["z"], "source": 7}
 
         # DETECTIONS
-        lc_df = pd.DataFrame(result['lc'])[['mjd', 'mag', 'magerr', 'filter', "expname"]]
-        lc_df.columns = ['mjd', 'mag', 'mag_err', 'filter', "expname"]
+        lc_df = pd.DataFrame(result['lc'])[['mjd', 'mag', 'magerr', 'mag5sig', 'filter', "expname"]]
+        lc_df.columns = ['mjd', 'mag', 'mag_err', 'limit', 'filter', "expname"]
         #lc_df['upperlimit'] = False
-        # NONDETECTIONS
-        lc_df_non = pd.DataFrame(result['lcnondets'])[['mjd', 'mag5sig', 'input', 'filter', "expname"]]
-        lc_df_non.columns = ['mjd', 'mag', 'mag_err', 'filter', "expname"]
-        lc_df_non['mag_err'] = np.nan
-        #lc_df_non['upperlimit'] = True
+        # NONDETECTIONS (leave out for now)
+        # lc_df_non = pd.DataFrame(result['lcnondets'])[['mjd', 'mag5sig', 'input', 'filter', "expname"]]
+        # lc_df_non.columns = ['mjd', 'mag', 'mag_err', 'filter', "expname"]
+        # lc_df_non['mag_err'] = np.nan
+        # lc_df_non['upperlimit'] = True
         # Concat
-        lc_df = pd.concat((lc_df, lc_df_non))
+        # lc_df = pd.concat((lc_df, lc_df_non))
         # Add a column to record which ATLAS unit the value was taken from
         lc_df['unit'] = lc_df["expname"].str[:3]
         lc_df.drop('expname', axis=1, inplace=True)
