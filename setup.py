@@ -8,7 +8,7 @@ with open("requirements.txt") as f:
 
 setup(
     name="tarxiv",
-    version="0.0.2",
+    version="0.0.3",
     author="Kyle Hart",
     author_email="kylehart@hawaii.edu",
     license="BSD-3",

@@ -14,18 +14,21 @@ import os
 
 
 class Gmail(TarxivModule):
-    """Base class for TNS data"""
+    """Module for interfacing with gmail and parsing TNS alerts."""
 
-    def __init__(self, config_dir, debug=False):
-        super().__init__("tarxiv-gmail", config_dir, debug)
+    def __init__(self, *args, **kwargs):
+        """
+        Create module, authenticate gmail and establish connection.
+        """
+        super().__init__("tarxiv-gmail", *args, **kwargs)
 
         # Logging
         self.logger.info({"status": "connecting"})
         # Get gmail token
         self.creds = None
         # Absolute paths
-        token = os.path.join(config_dir, self.config["gmail"]["token_name"])
-        secrets = os.path.join(config_dir, self.config["gmail"]["secrets_file"])
+        token = os.path.join(self.config_dir, self.config["gmail"]["token_name"])
+        secrets = os.path.join(self.config_dir, self.config["gmail"]["secrets_file"])
         # The file token.json stores the user's access and refresh tokens
         if os.path.exists(token):
             self.creds = Credentials.from_authorized_user_file(
@@ -53,7 +56,7 @@ class Gmail(TarxivModule):
     def poll(self, timeout=1):
         """
         Once we have began monitoring notices, poll the queue for new messages and alerts
-        :param queue timeout, seconds; int
+        :param timeout, seconds; int
         :return: poll result tuple containing the original message and a list of tns object names; (message, alerts)
                  if there is nothing in the queue then poll will return None after the timeout has expired.
         """
@@ -67,9 +70,10 @@ class Gmail(TarxivModule):
 
     def parse_message(self, message, service):
         """
-        Parse a message for tns object names
-        :param message:
-        :return:
+        Parse a gmail message for tns object names
+        :param message: gmail message object
+        :param service: gmail service object
+        :return: list of tns object names
         """
         # Result stays non of message is not structured properly or not from TNS
         result = None
@@ -93,8 +97,8 @@ class Gmail(TarxivModule):
     def mark_read(self, message):
         """
         Marks message as read in gmail, so it won't show up again in our monitoring stream
-        :param message:
-        :return:
+        :param message: gmail message object
+        :return: void
         """
         # Mark as read
         self.service.users().messages().modify(
@@ -103,9 +107,19 @@ class Gmail(TarxivModule):
         self.logger.debug({"action": "message_read", "id": message["id"]})
 
     def monitor_notices(self):
-        threading.Thread(target=self._monitoring_thread, daemon=True).start()
+        """
+        Starts thread to monitor gmail account for tns alerts:
+        :return: void
+        """
+        t = threading.Thread(target=self._monitoring_thread, daemon=True)
+        t.start()
 
     def _monitoring_thread(self):
+        """
+        Open a gmail service object and continuously monitor gmail for new messages.
+        Each new message is parsed of tns object alerts and results are submitted to local queue.
+        :return: void
+        """
         # Connect to service
         service = build("gmail", "v1", credentials=self.creds)
 

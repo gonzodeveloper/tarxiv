@@ -5,10 +5,20 @@ import sys
 import os
 
 class TarxivModule:
+    """
+    Base class for all TarXiv modules to ensure unified logging and configuration.
+    """
     def __init__(self, module, config_dir, debug=False):
+        """
+        Read in configuration file and create module logger
+        :param module: name of module; str
+        :param config_dir: directory containing config files; str.
+        :param debug: sets logging level to DEBUG.
+        """
         # Set module
         self.module = module
         # Read in config
+        self.config_dir = config_dir
         self.config_file = os.path.join(config_dir, "config.yml")
         with open(self.config_file) as stream:
             self.config = yaml.safe_load(stream)
@@ -26,46 +36,25 @@ class TarxivModule:
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
+
+        # If set in config, log to file
+        if self.config["log_dir"]:
+            log_file = os.path.join(self.config["log_dir"], self.module + ".log")
+            handler = logging.FileHandler(log_file)
+            handler.setFormatter(formatter)
+            self.logger.addHandler(handler)
+
         # Status
         self.logger.info({"status": "initializing", "module": self.module})
 
 
-def read_config(config_file):
-    """Read in yaml configuration file for modules.
-
-    :param config_file: filename for config yaml; str
-    :return: module configuration; dict
-    """
-    # Read in configuration
-    with open(config_file) as stream:
-        return yaml.safe_load(stream)
-
-
 def clean_meta(obj_meta):
-    return {k: v for k, v in obj_meta.items() if v == []}
+    """
+    Removes any empty fields from object meta schema
+    :param obj_meta: object meta schema; dict
+    :return: clean schema; dict
+    """
+    obj_meta = {k: v for k, v in obj_meta.items() if v != []}
+    obj_meta = {k: v[0] for k, v in obj_meta.items() if len(v) == 1}
+    return obj_meta
 
-def get_logger(module_name, level, log_file):
-    # Use logging module
-    logger = logging.getLogger(module_name)
-
-    if level == "info":
-        logger.setLevel(logging.INFO)
-    elif level == "debug":
-        logger.setLevel(logging.DEBUG)
-    else:
-        raise ValueError("invalid logging level, not in  ['info', 'debug']")
-
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-
-    # Add logfile if needed
-    if log_file is not None:
-        handler = logging.FileHandler(log_file)
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-
-    return logger

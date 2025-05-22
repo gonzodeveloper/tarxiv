@@ -8,7 +8,6 @@ from astropy.time import Time
 from collections import OrderedDict
 
 import pandas as pd
-import numpy as np
 import requests
 import zipfile
 import json
@@ -18,12 +17,17 @@ import re
 import os
 
 class Survey(TarxivModule):
-    """Base class to interact with a Tarxiv survey or data source."""
-    def __init__(self, module, config_dir, debug=False):
-        super().__init__(module, config_dir, debug)
+    """
+    Base class to interact with a Tarxiv survey or data source.
+    """
+    def __init__(self, *args, **kwargs):
+        """
+        Read in data for survey sources from config directory
+        """
+        super().__init__(*args, **kwargs)
 
         # Read in schema sources
-        schema_sources = os.path.join(config_dir, "sources.json")
+        schema_sources = os.path.join(self.config_dir, "sources.json")
         with open(schema_sources) as f:
             self.schema_sources = json.load(f)
 
@@ -46,10 +50,11 @@ class Survey(TarxivModule):
                                "hostname": [{"value": "NCGXXXX", "source": 9},
                                             {"value": "2MASS XXXXX", "source": 10}]
                                ...}}
-        Also return lightcurve dataframe with columns [mjd, mag, mag_err, filter, unit, survey],
+        Also return lightcurve dataframe with columns [mjd, mag, mag_err, limit, filter, unit, survey],
             mjd: modified julian date,
             mag: magnitude,
             mag_err: magnitude error,
+            limit: 5-sigma limiting magnitude,
             filter: bandpass filter,
             unit: telescope or camera for given measurement (if survey only has one unit, use 'main')
             survey: survey name.
@@ -83,9 +88,9 @@ class Survey(TarxivModule):
     def meta_add_peak_mags(self, obj_meta, obj_lc_df):
         """
         Once we have all the object dataframes collated; find peak mag for each filter and append to object_meta.
-        :param obj_meta:
-        :param obj_lc:
-        :return:
+        :param obj_meta: object meta schema; dict
+        :param obj_lc_df: light curve dataframe; pd.DataFrame
+        :return:object_meta; updated object meta dictionary
         """
 
         # Get brightest mag for each filter
@@ -94,8 +99,8 @@ class Survey(TarxivModule):
         peak_mags = []
         for filter_name, row in filter_df.iterrows():
             peak_mag = {"filter": filter_name,
-                        "mag": row["mag"],
-                        "mjd": row["mjd"],
+                        "value": row["mag"],
+                        "mjd_recorded": row["mjd"],
                         "source": self.survey_source_map[row["survey"]]}
             peak_mags.append(peak_mag)
         # Append if exists
@@ -105,11 +110,15 @@ class Survey(TarxivModule):
         return obj_meta
 
 
-
-
 class ASAS_SN(Survey):
+    """
+    Interface to ASAS-SN SkyPatrol.
+    """
 
     def __init__(self, *args, **kwargs):
+        """
+        Connect to ASAS-SN SkyPatrol API.
+        """
         super().__init__("asas-sn", *args, **kwargs)
 
         # Also need ASAS-SN client
@@ -118,6 +127,10 @@ class ASAS_SN(Survey):
     def get_object(self, ra_deg, dec_deg, radius=15):
         """
         Get ASAS-SN Lightcurve curve from coordinates using cone_search.
+        :param ra_deg: right ascension in degrees; float
+        :dec_deg: declination in degrees; float
+        :param radius: radius in arcseconds; int
+        return asas-sn metadata and lightcurve dataframe
         """
         # Query client
         query = f"WITH sources AS                " \
@@ -154,10 +167,20 @@ class ASAS_SN(Survey):
 
 
 class ZTF(Survey):
+    """
+    Interface to ZTF Fink broker.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__("ztf", *args, **kwargs)
 
     def get_object(self, ra_deg, dec_deg, radius=15):
+        """
+        Get ZTF Lightcurve from coordinates using cone_search.
+        :param ra_deg: right ascension in degrees; float
+        :dec_deg: declination in degrees; float
+        :param radius: radius in arcseconds; int
+        return ztf metadata and lightcurve dataframe
+        """
         result = requests.post(
             f"{self.config['fink_url']}/api/v1/conesearch",
             json={"ra": ra_deg, "dec": dec_deg, "radius": radius, "columns": "i:objectId"},
@@ -225,10 +248,20 @@ class ZTF(Survey):
         return meta, lc_df
 
 class ATLAS(Survey):
+    """
+    Interface to ATLAS Transient Web Server.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__("atlas", *args, **kwargs)
 
     def get_object(self, ra_deg, dec_deg, radius=15):
+        """
+        Get ZTF Lightcurve from coordinates using cone_search.
+        :param ra_deg: right ascension in degrees; float
+        :dec_deg: declination in degrees; float
+        :param radius: radius in arcseconds; int
+        return ztf metadata and lightcurve dataframe
+        """
         try:
             # First run cone search to get id
             cone_res = atlas_client.ConeSearch(api_config_file=self.config_file,
@@ -284,8 +317,14 @@ class ATLAS(Survey):
         return meta, lc_df
 
 class TNS(Survey):
+    """
+    Interface to Transient Name Server API.
+    """
 
     def __init__(self, *args, **kwargs):
+        """
+        Read in credentials and construct 'marker' for API calls
+        """
         super().__init__("tns", *args, **kwargs)
 
         # Set attributes
@@ -301,6 +340,11 @@ class TNS(Survey):
         self.marker = "tns_marker" + json.dumps(tns_marker_dict, separators=(",", ":"))
 
     def get_object(self, objname):
+        """
+        Get TNS metadata for a given object name.
+        :param objname: TNS object name, e.g., 2025xxx; str
+        :return: metadata dictionary and empty dataframe (since we are not pulling lightcurve)
+        """
         # Wait to avoid rate limiting
         time.sleep(self.config["tns"]["rate_limit"])
         # Run request to TNS server
@@ -338,6 +382,11 @@ class TNS(Survey):
         return meta, pd.DataFrame()
 
     def download_bulk_tns(self):
+        """
+        Download bulk TNS public object csv and convert to dataframe.
+        Used for bulk back-processing of TNS sources
+        :return: full TNS public object dataframe
+        """
         # Run request to TNS Server
         self.logger.info("pulling bulk tns objects")
         get_url = (
