@@ -50,8 +50,12 @@ class Gmail(TarxivModule):
         # Connect to email
         self.logger.info({"status": "connected"})
 
+        # Create thread value
+        self.t = None
         # Create internal queue
         self.q = Queue()
+        # Create stop flag for monitoring
+        self.stop_event = threading.Event()
 
     def poll(self, timeout=1):
         """
@@ -111,9 +115,22 @@ class Gmail(TarxivModule):
         Starts thread to monitor gmail account for tns alerts:
         :return: void
         """
-        t = threading.Thread(target=self._monitoring_thread, daemon=True)
-        t.start()
+        self.t = threading.Thread(target=self._monitoring_thread, daemon=True)
+        self.t.start()
+        # Log
+        self.logger.info({"status":"starting monitoring thread"})
 
+    def stop_monitoring(self):
+        """
+        Kill monitoring thread.
+        :return: void
+        """
+        if self.t is not None:
+            # Set the stop event (should kill the thread)
+            self.stop_event.set()
+            self.t.join()
+        # Log
+        self.logger.info({"status":"stopping monitoring thread"})
     def _monitoring_thread(self):
         """
         Open a gmail service object and continuously monitor gmail for new messages.
@@ -124,7 +141,7 @@ class Gmail(TarxivModule):
         # Connect to service
         service = build("gmail", "v1", credentials=self.creds)
         last_refresh = time.time()
-        while True:
+        while not self.stop_event.is_set():
             now = time.time()
             if now - last_refresh >= (30 * 60):
                 self.creds.refresh(Request())

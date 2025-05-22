@@ -408,6 +408,8 @@ class TNS(Survey):
         if result["hostname"] is not None:
             meta["host_name"] = {"value": result["hostname"], "source": 0}
 
+        self.logger.info({"status": "query_complete",
+                          "obj_name": objname})
         # TNS only returns meta
         return meta, pd.DataFrame()
 
