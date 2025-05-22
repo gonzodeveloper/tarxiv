@@ -20,7 +20,7 @@ class Gmail(TarxivModule):
         """
         Create module, authenticate gmail and establish connection.
         """
-        super().__init__("tarxiv-gmail", *args, **kwargs)
+        super().__init__("gmail", *args, **kwargs)
 
         # Logging
         self.logger.info({"status": "connecting"})

@@ -6,7 +6,7 @@ import pandas as pd
 import argparse
 
 # Get config dir from arguments
-parser = argparse.ArgumentParser('tarxiv-tns-ingest',
+parser = argparse.ArgumentParser('tns-ingest',
                                  description="TarXiv TNS Alert ingestion. "
                                         "Monitor new TNS alerts, and query relevant data into database.'")
 parser.add_argument('--debug', action='store_true', default=False,

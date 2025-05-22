@@ -14,7 +14,7 @@ class TarxivDB(TarxivModule):
         """
         Read in object schema and connect to couchbase.
         """
-        super().__init__("tarxiv-couchbase", *args, **kwargs)
+        super().__init__("couchbase", *args, **kwargs)
         self.schema_file = os.path.join(self.config_dir, "schema.json")
         # Connect to Couchbase
         self.logger.info("connecting to couchbase")
