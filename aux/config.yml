@@ -3,7 +3,7 @@
 
 # General
 log_level: "debug"
-log_dir: "./"   #"/home/almalinux/logs/"
+log_dir: "/home/almalinux/logs/"
 
 # hosting information
 host: 157.136.254.204
