@@ -150,10 +150,15 @@ class ASAS_SN(Survey):
 
         query = re.sub(r'(\s+)', ' ', query)
         lcs = self.client.adql_query(query, download=True)
+
         # Get meta
         nearest = lcs.catalog_info.iloc[0]
         nearest_id = nearest['asas_sn_id']
         meta = {'identifiers': [{"name": str(nearest_id), 'source': 6}]}
+        # Sometimes we have meta but no database object (will fix later)
+        if len(lcs.data) == 0:
+            return meta, pd.DataFrame()
+
         # Get LC
         lc_df =  lcs[nearest_id].data
         lc_df['mjd'] = lc_df.apply(lambda row: Time(row['jd'], format='jd').mjd, axis=1)
