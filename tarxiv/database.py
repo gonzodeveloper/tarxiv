@@ -3,6 +3,7 @@ from .utils import TarxivModule
 from couchbase.cluster import Cluster
 from couchbase.options import ClusterOptions
 from couchbase.auth import PasswordAuthenticator
+from couchbase.exceptions import DocumentNotFoundException
 import json
 import os
 
@@ -45,7 +46,7 @@ class TarxivDB(TarxivModule):
         """
         coll = self.conn.collection(collection)
         coll.upsert(object_name, payload)
-        self.logger.debug({"action": "upserted", "object_name": object_name, "collection": collection})
+        self.logger.info({"status": "upserted", "object_name": object_name, "collection": collection})
 
     def get(self, object_name, collection):
         """
@@ -54,9 +55,13 @@ class TarxivDB(TarxivModule):
         :param collection: couchbase collection; meta or lightcurve; str
         :return: object document, either metadata or lightcurve; dict or list of dicts
         """
-        coll = self.conn.collection(collection)
-        result = coll.get(object_name).value
-        self.logger.debug({"action": "retrieved", "object_name": object_name, "collection": collection})
+        try:
+            coll = self.conn.collection(collection)
+            result = coll.get(object_name).value
+            self.logger.info({"status": "retrieved", "object_name": object_name, "collection": collection})
+        except DocumentNotFoundException:
+            self.logger.warn({"status": "no_document", "object_name": object_name, "collection": collection})
+            result = None
         return result
 
     def close(self):
