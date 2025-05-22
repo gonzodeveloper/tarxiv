@@ -1,6 +1,9 @@
 atlasapiclient
 fink-tns
 hop-client
+skypatrol
+astropy
+requests
 pandas
 pyyaml
 couchbase
