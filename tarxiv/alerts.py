@@ -118,12 +118,19 @@ class Gmail(TarxivModule):
         """
         Open a gmail service object and continuously monitor gmail for new messages.
         Each new message is parsed of tns object alerts and results are submitted to local queue.
+        Also refresh the token every 30 minutes.
         :return: void
         """
         # Connect to service
         service = build("gmail", "v1", credentials=self.creds)
-
+        last_refresh = time.time()
         while True:
+            now = time.time()
+            if now - last_refresh >= (30 * 60):
+                self.creds.refresh(Request())
+                service = build("gmail", "v1", credentials=self.creds)
+                last_refresh = now
+
             # Call the Gmail API
             self.logger.debug({"action": "checking_messages"})
             results = (
