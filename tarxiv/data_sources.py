@@ -150,25 +150,35 @@ class ASAS_SN(Survey):
 
         query = re.sub(r'(\s+)', ' ', query)
         lcs = self.client.adql_query(query, download=True)
-
-        # Get meta
-        nearest = lcs.catalog_info.iloc[0]
-        nearest_id = nearest['asas_sn_id']
-        meta = {'identifiers': [{"name": str(nearest_id), 'source': 6}]}
+        if lcs is None:
+            meta = None
+        else:
+            # Get meta
+            nearest = lcs.catalog_info.iloc[0]
+            nearest_id = nearest['asas_sn_id']
+            meta = {'identifiers': [{"name": str(nearest_id), 'source': 6}]}
         # Sometimes we have meta but no database object (will fix later)
         if len(lcs.data) == 0:
-            return meta, pd.DataFrame()
+            lc_df = meta, pd.DataFrame()
+        else:
+            # Get LC
+            lc_df =  lcs[nearest_id].data
+            lc_df['mjd'] = lc_df.apply(lambda row: Time(row['jd'], format='jd').mjd, axis=1)
+            lc_df.rename({"phot_filter": "filter", "camera": "unit"}, axis=1, inplace=True)
+            # Do not return data from bad images
+            lc_df = lc_df[lc_df['quality'] != "B"]
+            # Throw out non_detections if not specified
+            lc_df = lc_df[lc_df['mag_err'] < 99]
+            lc_df['survey'] = "ASAS-SN"
+            lc_df = lc_df[['mjd', 'mag', 'mag_err', 'limit', 'filter', 'unit', 'survey']]
 
-        # Get LC
-        lc_df =  lcs[nearest_id].data
-        lc_df['mjd'] = lc_df.apply(lambda row: Time(row['jd'], format='jd').mjd, axis=1)
-        lc_df.rename({"phot_filter": "filter", "camera": "unit"}, axis=1, inplace=True)
-        # Do not return data from bad images
-        lc_df = lc_df[lc_df['quality'] != "B"]
-        # Throw out non_detections if not specified
-        lc_df = lc_df[lc_df['mag_err'] < 99]
-        lc_df['survey'] = "ASAS-SN"
-        return meta, lc_df[['mjd', 'mag', 'mag_err', 'limit', 'filter', 'unit', 'survey']]
+        # Log
+        self.logger.info({"status": "query_complete",
+                          "ra_deg": ra_deg,
+                          "dec_deg": dec_deg,
+                          "radius": radius,
+                          "found_object": 1 if len(lc_df) > 0 else 0})
+        return meta, lc_df
 
 
 class ZTF(Survey):
@@ -186,6 +196,8 @@ class ZTF(Survey):
         :param radius: radius in arcseconds; int
         return ztf metadata and lightcurve dataframe
         """
+
+        # Hit FINK API
         result = requests.post(
             f"{self.config['fink_url']}/api/v1/conesearch",
             json={"ra": ra_deg, "dec": dec_deg, "radius": radius, "columns": "i:objectId"},
@@ -249,7 +261,12 @@ class ZTF(Survey):
         # Add unit/survey columns
         lc_df["unit"] = "main"
         lc_df["survey"] = "ZTF"
-
+        # Log
+        self.logger.info({"status": "query_complete",
+                          "ra_deg": ra_deg,
+                          "dec_deg": dec_deg,
+                          "radius": radius,
+                          "found_object": 1 if len(lc_df) > 0 else 0})
         return meta, lc_df
 
 class ATLAS(Survey):
@@ -276,6 +293,7 @@ class ATLAS(Survey):
                                               "requestType": "nearest"},
                                      get_response=True)
         except ATLASAPIClientError:
+            self.logger.warning({"status": "client api error"})
             return None, pd.DataFrame()
 
         # Get atlas id and query for data
@@ -287,6 +305,7 @@ class ATLAS(Survey):
                                                          atlas_id=str(atlas_id),
                                                          get_response=True)
         except ATLASAPIClientError:
+            self.logger.warning({"status": "client api error"})
             return None, pd.DataFrame()
 
         # Contains meta and lc
@@ -318,6 +337,12 @@ class ATLAS(Survey):
         lc_df['unit'] = lc_df["expname"].str[:3]
         lc_df.drop('expname', axis=1, inplace=True)
         lc_df['survey'] = "ATLAS"
+        # Log
+        self.logger.info({"status": "query_complete",
+                          "ra_deg": ra_deg,
+                          "dec_deg": dec_deg,
+                          "radius": radius,
+                          "found_object": 1 if len(lc_df) > 0 else 0})
 
         return meta, lc_df
 
