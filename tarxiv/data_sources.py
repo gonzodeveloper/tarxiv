@@ -304,7 +304,7 @@ class ATLAS(Survey):
             curve_res = atlas_client.RequestSingleSourceData(api_config_file=self.config_file,
                                                          atlas_id=str(atlas_id),
                                                          get_response=True)
-        except ATLASAPIClientError:
+        except (ATLASAPIClientError, KeyError):
             self.logger.warning({"status": "client api error"})
             return None, pd.DataFrame()
 
