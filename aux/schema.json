@@ -11,5 +11,6 @@
   "reporting_group": [],
   "discovery_data_source": [],
   "redshift": [],
-  "host_name": []
+  "host_name": [],
+  "peak_mag":[]
 }

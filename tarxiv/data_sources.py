@@ -27,6 +27,16 @@ class Survey(TarxivModule):
         with open(schema_sources) as f:
             self.schema_sources = json.load(f)
 
+        # Survey name map (could write better, but fuck it)
+        self.survey_source_map = {
+            "TNS": 0,
+            "ATLAS": 2,
+            "ZTF": 3,
+            "ASAS-SN": 5,
+            "SHERLOCK": 7,
+            "MANGROVE": 8
+        }
+
     def get_object(self, *args, **kwargs):
         """
         Query the survey for object at a given set of coordinates.
@@ -69,19 +79,32 @@ class Survey(TarxivModule):
 
         return obj_meta
 
-    def update_object_lc(self, obj_lc, survey_lc):
+
+    def meta_add_peak_mags(self, obj_meta, obj_lc_df):
         """
-        Transform survey lightcurve to json and append the existing object lightcurve
-        :param obj_lc: object lightcurve; list
-        :param survey_lc: survey lightcurve; dataframe
+        Once we have all the object dataframes collated; find peak mag for each filter and append to object_meta.
+        :param obj_meta:
+        :param obj_lc:
         :return:
         """
-        # Append lightcurve
-        lc_json = survey_lc.to_dict(orient='records')
-        for item in lc_json:
-            obj_lc.append(item)
 
-        return obj_lc
+        # Get brightest mag for each filter
+        filter_df = obj_lc_df.groupby('filter').min()
+
+        peak_mags = []
+        for filter_name, row in filter_df.iterrows():
+            peak_mag = {"filter": filter_name,
+                        "mag": row["mag"],
+                        "mjd": row["mjd"],
+                        "source": self.survey_source_map[row["survey"]]}
+            peak_mags.append(peak_mag)
+        # Append if exists
+        if peak_mags:
+            obj_meta["peak_mag"] = peak_mags
+
+        return obj_meta
+
+
 
 
 class ASAS_SN(Survey):

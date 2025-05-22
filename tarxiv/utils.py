@@ -41,6 +41,9 @@ def read_config(config_file):
         return yaml.safe_load(stream)
 
 
+def clean_meta(obj_meta):
+    return {k: v for k, v in obj_meta.items() if v == []}
+
 def get_logger(module_name, level, log_file):
     # Use logging module
     logger = logging.getLogger(module_name)
