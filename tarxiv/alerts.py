@@ -153,7 +153,7 @@ class Gmail(TarxivModule):
                     self.mark_read(message)
                     continue
                 # Log
-                self.logger.info({"status": "recieved alerts", "objects": alerts})
+                self.logger.debug({"status": "recieved alerts", "objects": alerts})
 
                 # Submit to queue for processing
                 self.q.put((message, alerts))
