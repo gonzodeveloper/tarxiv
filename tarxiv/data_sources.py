@@ -159,7 +159,7 @@ class ASAS_SN(Survey):
             meta = {'identifiers': [{"name": str(nearest_id), 'source': 6}]}
         # Sometimes we have meta but no database object (will fix later)
         if lcs is None or lcs.data is None or len(lcs.data) == 0:
-            lc_df = meta, pd.DataFrame()
+            lc_df = pd.DataFrame()
         else:
             # Get LC
             lc_df =  lcs[nearest_id].data
