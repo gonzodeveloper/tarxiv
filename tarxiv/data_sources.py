@@ -196,12 +196,12 @@ class ZTF(Survey):
             return None, pd.DataFrame()
         # get data for the match
         matches = [val["i:objectId"] for val in result.json()]
-        ztf_name = matches[0]
 
         if len(matches) == 0:
             self.logger.info({"status": "fink_cone_search_miss"})
             return None, pd.DataFrame()
-
+        # Show ztf name
+        ztf_name = matches[0]
         # Query
         result = requests.post(
             f"{self.config['fink_url']}/api/v1/objects",
