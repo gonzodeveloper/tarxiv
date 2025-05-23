@@ -420,6 +420,7 @@ class TNS(Survey):
                 raise SurveyMetaMissing
 
             # Reduce meta to what we want
+            status["status"] = "query success"
             result = response_json["data"]
             meta = {
                 "identifiers": {"name": result["objname"], "source": 0},
@@ -439,7 +440,7 @@ class TNS(Survey):
                 meta["host_name"] = {"value": result["hostname"], "source": 0}
 
         except SurveyMetaMissing:
-            status['message'] = "failed to get TNS metadata"
+            status['status'] = "failed to get TNS metadata"
 
         except Exception as e:
             status.update({"status": "encontered unexpected error",
