@@ -92,7 +92,8 @@ class Survey(TarxivModule):
         :param obj_lc_df: light curve dataframe; pd.DataFrame
         :return:object_meta; updated object meta dictionary
         """
-
+        if len(obj_lc_df) == 0:
+            return pd.DataFrame()
         # Get brightest mag for each filter
         filter_df = obj_lc_df.groupby('filter').min()
 

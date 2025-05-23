@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from tarxiv.data_sources import TNS, ATLAS, ASAS_SN, ZTF
 from tarxiv.database import TarxivDB
+from tarxiv.utils import clean_meta
 import pandas as pd
 import argparse
 
@@ -49,8 +50,9 @@ for obj_name in obj_list:
     lc_df = pd.concat([atlas_lc, ztf_lc, asas_sn_lc])
     # Add peak magnitudes to meta
     obj_meta = txv_tns.meta_add_peak_mags(obj_meta, lc_df)
+    obj_meta = clean_meta(obj_meta)
     # Convert to json for submission
     obj_lc = lc_df.to_dict(orient="records")
     # Push to database
-    txv_db.upsert(obj_meta, obj_meta, "tns_objects")
-    txv_db.upsert(obj_lc, obj_lc, "tns_lightcurves")
+    txv_db.upsert(obj_name, obj_meta, "tns_objects")
+    txv_db.upsert(obj_name, obj_lc, "tns_lightcurves")
