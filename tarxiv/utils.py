@@ -60,6 +60,6 @@ def clean_meta(obj_meta):
     :return: clean schema; dict
     """
     obj_meta = {k: v for k, v in obj_meta.items() if v != []}
-    obj_meta = {k: v[0] for k, v in obj_meta.items() if len(v) == 1}
+    # obj_meta = {k: v[0] for k, v in obj_meta.items() if len(v) == 1}
     return obj_meta
 

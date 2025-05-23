@@ -94,7 +94,8 @@ class Survey(TarxivModule):
         :return:object_meta; updated object meta dictionary
         """
         if len(obj_lc_df) == 0:
-            return pd.DataFrame()
+            return obj_meta
+
         # Get brightest mag for each filter
         filter_df = obj_lc_df.groupby('filter').min()
 
@@ -164,7 +165,9 @@ class ASAS_SN(Survey):
             # Get meta
             nearest = lcs.catalog_info.iloc[0]
             nearest_id = nearest['asas_sn_id']
-            meta = {'identifiers': [{"name": str(nearest_id), 'source': 6}]}
+            meta = {'identifiers': [{"name": str(nearest_id), 'source': 6}],
+                    'ra_deg': [{"value": nearest['ra_deg'], 'source': 6}],
+                    'dec_deg': [{"value": nearest['dec_deg'], 'source': 6}],}
             # Log
             status.update({"status": "match", "id": str(nearest_id)})
             # Sometimes we have meta but no database object (will fix later)
@@ -246,7 +249,10 @@ class ZTF(Survey):
 
             # Metadata on each line of photometry, we only take first row (d prefix are non-phot)
             result_meta = result.json()[0]
-            meta = {"identifiers": [{"name": ztf_name, "source": 3}]}
+            meta = {'identifiers': [{'name': ztf_name, 'source': 3}],
+                    'ra_deg': [{'value': result_meta['i:ra'], 'source': 3}],
+                    'dec_deg': [{'value': result_meta['i:dec'], 'source': 3}]}
+
             meta['host_name'] = []
             if "d:mangrove_2MASS_name" in result_meta.keys() and result_meta["d:mangrove_2MASS_name"] != 'None':
                 host_name = {"name": result_meta["d:mangrove_2MASS_name"], "source": 8}
@@ -339,7 +345,10 @@ class ATLAS(Survey):
                 raise SurveyLightCurveMissing
 
             # Insert meta data
-            meta = {"identifiers": [{"name": result["object"]["id"], "source": 1}]}
+            meta = {"identifiers": [{"name": result["object"]["id"], "source": 1}],
+                    "ra_deg": [{"value": result["object"]["ra"], "source": 1}],
+                    "dec_deg": [{"value": result["object"]["dec"], "source": 1}]}
+
             if result["object"]["atlas_designation"] is not None:
                 atlas_name = {"name": result["object"]["atlas_designation"], "source": 2}
                 meta["identifiers"].append(atlas_name)
