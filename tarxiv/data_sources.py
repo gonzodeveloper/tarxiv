@@ -233,10 +233,10 @@ class ZTF(Survey):
         result_meta = result.json()[0]
         meta = {"identifiers": [{"name": ztf_name, "source": 3}]}
         meta['host_name'] = []
-        if result_meta["d:mangrove_2MASS_name"] != 'None':
+        if "d:mangrove_2MASS_name" in result_meta.keys() and result_meta["d:mangrove_2MASS_name"] != 'None':
             host_name = {"name": result_meta["d:mangrove_2MASS_name"], "source": 8}
             meta['host_name'].append(host_name)
-        if result_meta["d:mangrove_HyperLEDA_name"] != 'None':
+        if "d:mangrove_2MASS_name" in result_meta.keys() and result_meta["d:mangrove_HyperLEDA_name"] != 'None':
             host_name = {"name": result_meta["d:mangrove_HyperLEDA_name"], "source": 8}
             meta['host_name'].append(host_name)
         if len(meta['host_name']) == 0:
