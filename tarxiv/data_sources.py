@@ -331,11 +331,10 @@ class ATLAS(Survey):
                                                              get_response=True)
             # Contains meta and lc
             result = curve_res.response_data[0]
-            status.update({"status": "match", "id": ztf_name})
+            status.update({"status": "match", "id": result["object"]["id"]})
 
             # Insert meta data
             meta = {"identifiers": [{"name": result["object"]["id"], "source": 1}]}
-            status
             if result["object"]["atlas_designation"] is not None:
                 atlas_name = {"name": result["object"]["atlas_designation"], "source": 2}
                 meta["identifiers"].append(atlas_name)
