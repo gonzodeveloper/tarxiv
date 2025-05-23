@@ -5,6 +5,7 @@ from tarxiv.alerts import Gmail
 from tarxiv.utils import clean_meta
 import pandas as pd
 import argparse
+import signal
 
 # Get config dir from arguments
 parser = argparse.ArgumentParser('tns-ingest',
@@ -29,6 +30,10 @@ schema = txv_db.get_object_schema()
 # Connect to gmail, and start monitoring thread
 txv_gmail = Gmail(args.config_dir, debug=args.debug)
 txv_gmail.monitor_notices()
+
+# Extra signal killing
+signal.signal(signal.SIGINT, lambda signum, frame: exit(0))
+signal.signal(signal.SIGTERM, lambda signum, frame: exit(0))
 
 while True:
     # Get next message
