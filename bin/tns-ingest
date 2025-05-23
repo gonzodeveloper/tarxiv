@@ -41,6 +41,8 @@ while True:
     for obj_name in alerts:
         # Get initial info from TNS
         tns_meta, _ = txv_tns.get_object(obj_name)
+        if tns_meta is None:
+            continue
         ra_deg, dec_deg = tns_meta['ra_deg']["value"], tns_meta['dec_deg']["value"]
         # Now get meta and lightcurves from the surveys
         atlas_meta, atlas_lc = txv_atlas.get_object(obj_name, ra_deg, dec_deg)
