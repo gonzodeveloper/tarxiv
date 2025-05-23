@@ -357,6 +357,7 @@ class ATLAS(Survey):
             lc_df['unit'] = lc_df["expname"].str[:3]
             lc_df.drop('expname', axis=1, inplace=True)
             lc_df['survey'] = "ATLAS"
+            status["lc_count"] = len(lc_df)
 
         except (SurveyMetaMissing, ATLASAPIClientError):
             status['status'] = "no match"
