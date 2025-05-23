@@ -323,15 +323,20 @@ class ATLAS(Survey):
                                      get_response=True)
 
 
+            if 'object' not in cone_res.response_data.keys():
+                raise SurveyMetaMissing
             # Get atlas id and query for data
-            atlas_id = cone_res.response_data['object']  # The ATLAS is from cone search
+            atlas_id = cone_res.response_data['object']
+            status.update({"status": "match", "id": atlas_id})
             # Get light curve
-            curve_res = atlas_client.RequestSingleSourceData(api_config_file=self.config_file,
-                                                             atlas_id=str(atlas_id),
-                                                             get_response=True)
-            # Contains meta and lc
-            result = curve_res.response_data[0]
-            status.update({"status": "match", "id": result["object"]["id"]})
+            try:
+                curve_res = atlas_client.RequestSingleSourceData(api_config_file=self.config_file,
+                                                                 atlas_id=str(atlas_id),
+                                                                 get_response=True)
+                # Contains meta and lc
+                result = curve_res.response_data[0]
+            except:
+                raise SurveyLightCurveMissing
 
             # Insert meta data
             meta = {"identifiers": [{"name": result["object"]["id"], "source": 1}]}
