@@ -166,7 +166,7 @@ class ASAS_SN(Survey):
             nearest_id = nearest['asas_sn_id']
             meta = {'identifiers': [{"name": str(nearest_id), 'source': 6}]}
             # Log
-            status.update({"status": "match", "id": nearest_id})
+            status.update({"status": "match", "id": str(nearest_id)})
             # Sometimes we have meta but no database object (will fix later)
             if lcs.data is None or len(lcs.data) == 0:
                 raise SurveyLightCurveMissing
