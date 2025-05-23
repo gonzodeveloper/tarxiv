@@ -37,9 +37,9 @@ for obj_name in obj_list:
     tns_meta, _ = txv_tns.get_object(obj_name)
     ra_deg, dec_deg = tns_meta['ra_deg']["value"], tns_meta['dec_deg']["value"]
     # Now get meta and lightcurves from the surveys
-    atlas_meta, atlas_lc = txv_atlas.get_object(ra_deg, dec_deg)
-    ztf_meta, ztf_lc = txv_ztf.get_object(ra_deg, dec_deg)
-    asas_sn_meta, asas_sn_lc = txv_asas_sn.get_object(ra_deg, dec_deg)
+    atlas_meta, atlas_lc = txv_atlas.get_object(obj_name, ra_deg, dec_deg)
+    ztf_meta, ztf_lc = txv_ztf.get_object(obj_name, ra_deg, dec_deg)
+    asas_sn_meta, asas_sn_lc = txv_asas_sn.get_object(obj_name, ra_deg, dec_deg)
 
     # Now we populate schema with our survey information
     obj_meta = txv_tns.update_object_meta(schema, tns_meta)
