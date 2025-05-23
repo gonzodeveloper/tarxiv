@@ -98,7 +98,7 @@ class Gmail(TarxivModule):
 
         return result
 
-    def mark_read(self, message):
+    def mark_read(self, message, verbose=False):
         """
         Marks message as read in gmail, so it won't show up again in our monitoring stream
         :param message: gmail message object
@@ -108,7 +108,11 @@ class Gmail(TarxivModule):
         self.service.users().messages().modify(
             userId="me", id=message["id"], body={"removeLabelIds": ["UNREAD"]}
         ).execute()
-        self.logger.debug({"action": "message_read", "id": message["id"]})
+        status = {"action": "message_read", "id": message["id"]}
+        if verbose:
+            self.logger.info(status)
+        else:
+            self.logger.debug(status)
 
     def monitor_notices(self):
         """

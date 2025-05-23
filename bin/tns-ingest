@@ -64,4 +64,4 @@ while True:
         txv_db.upsert(obj_name, obj_lc, "tns_lightcurves")
 
     # Once complete with all objects in message, mark read
-    txv_gmail.mark_read(message)
+    txv_gmail.mark_read(message, verbose=True)
