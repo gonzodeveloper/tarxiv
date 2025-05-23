@@ -1,13 +1,14 @@
 # Listen for new TNS Alerts
 from .utils import TarxivModule
+from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
 from queue import Queue, Empty
 from bs4 import BeautifulSoup
 import threading
+import signal
 import base64
 import time
 import os
@@ -56,6 +57,9 @@ class Gmail(TarxivModule):
         self.q = Queue()
         # Create stop flag for monitoring
         self.stop_event = threading.Event()
+        # Signals
+        signal.signal(signal.SIGINT, self._signal_handler)
+        signal.signal(signal.SIGTERM, self._signal_handler)
 
     def poll(self, timeout=1):
         """
@@ -135,6 +139,7 @@ class Gmail(TarxivModule):
             self.t.join()
         # Log
         self.logger.info({"status":"stopping monitoring thread"})
+
     def _monitoring_thread(self):
         """
         Open a gmail service object and continuously monitor gmail for new messages.
@@ -178,3 +183,6 @@ class Gmail(TarxivModule):
 
                 # Submit to queue for processing
                 self.q.put((message, alerts))
+
+    def _signal_handler(self, sig, frame):
+        self.stop_monitoring()
