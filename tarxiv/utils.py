@@ -47,6 +47,11 @@ class TarxivModule:
         # Status
         self.logger.info({"status": "initializing", "module": self.module})
 
+class SurveyMetaMissing(Exception):
+    pass
+
+class SurveyLightCurveMissing(Exception):
+    pass
 
 def clean_meta(obj_meta):
     """
