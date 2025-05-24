@@ -158,7 +158,7 @@ class Gmail(TarxivModule):
                 last_refresh = now
 
             # Call the Gmail API
-            self.logger.debug({"action": "checking_messages"})
+            self.logger.info({"action": "checking_messages"})
             time.sleep(self.config["gmail"]["polling_interval"])
             results = (
                 service.users()
@@ -174,11 +174,13 @@ class Gmail(TarxivModule):
             for message in messages:
                 try:
                     # Read full message
+                    time.sleep(self.config["gmail"]["polling_interval"])
                     msg = service.users().messages().get(userId="me", id=message["id"]).execute()
                 except HttpError:
                     # Rate limit, wait 10 seconds and try again
                     self.logger.warn({"status": "rate_limited, sleeping 12 seconds"})
                     time.sleep(self.config["gmail"]["polling_interval"] * 3)
+                    msg = service.users().messages().get(userId="me", id=message["id"]).execute()
 
                 # Parse message for tns alerts
                 alerts = self.parse_message(msg)
