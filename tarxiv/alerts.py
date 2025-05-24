@@ -77,7 +77,7 @@ class Gmail(TarxivModule):
         return result
 
 
-    def parse_message(self, msg, service):
+    def parse_message(self, msg):
         """
         Parse a gmail message for tns object names
         :param msg: gmail message object
@@ -152,6 +152,7 @@ class Gmail(TarxivModule):
         while not self.stop_event.is_set():
             now = time.time()
             if now - last_refresh >= (30 * 60):
+                self.logger.info({"status": "refreshing token"})
                 self.creds.refresh(Request())
                 service = build("gmail", "v1", credentials=self.creds)
                 last_refresh = now
