@@ -54,6 +54,8 @@ while True:
         ztf_meta, ztf_lc = txv_ztf.get_object(obj_name, ra_deg, dec_deg)
         asas_sn_meta, asas_sn_lc = txv_asas_sn.get_object(obj_name, ra_deg, dec_deg)
 
+        # Gent a new schema
+        schema = txv_db.get_object_schema()
         # Now we populate schema with our survey information
         obj_meta = txv_tns.update_object_meta(schema, tns_meta)
         obj_meta = txv_atlas.update_object_meta(obj_meta, atlas_meta)
