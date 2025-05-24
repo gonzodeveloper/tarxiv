@@ -4,6 +4,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 from queue import Queue, Empty
 from bs4 import BeautifulSoup
@@ -76,18 +77,16 @@ class Gmail(TarxivModule):
         return result
 
 
-    def parse_message(self, message, service):
+    def parse_message(self, msg, service):
         """
         Parse a gmail message for tns object names
-        :param message: gmail message object
-        :param service: gmail service object
+        :param msg: gmail message object
         :return: list of tns object names
         """
         # Result stays non of message is not structured properly or not from TNS
         result = None
 
         # Pull message from gmail
-        msg = service.users().messages().get(userId="me", id=message["id"]).execute()
         headers = msg["payload"]["headers"]
         for hdr in headers:
             # Only process emails from TNS
@@ -159,6 +158,7 @@ class Gmail(TarxivModule):
 
             # Call the Gmail API
             self.logger.debug({"action": "checking_messages"})
+            time.sleep(self.config["gmail"]["polling_interval"])
             results = (
                 service.users()
                 .messages()
@@ -168,12 +168,19 @@ class Gmail(TarxivModule):
             messages = results.get("messages", [])
 
             if not messages:
-                time.sleep(self.config["gmail"]["polling_interval"])
                 continue
 
             for message in messages:
+                try:
+                    # Read full message
+                    msg = service.users().messages().get(userId="me", id=message["id"]).execute()
+                except HttpError:
+                    # Rate limit, wait 10 seconds and try again
+                    self.logger.warn({"status": "rate_limited, sleeping 12 seconds"})
+                    time.sleep(self.config["gmail"]["polling_interval"] * 3)
+
                 # Parse message for tns alerts
-                alerts = self.parse_message(message, service)
+                alerts = self.parse_message(msg)
 
                 if alerts is None:
                     self.mark_read(message)
